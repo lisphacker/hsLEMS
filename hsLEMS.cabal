@@ -1,0 +1,30 @@
+name:                hsLEMS
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/lisphacker/hsLEMS#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Gautham Ganapathy
+maintainer:          gautham@lisphacker.org
+copyright:           Gautham Ganapathy (gautham@lisphacker.org)
+category:            Simulation
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable hsLEMS
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     NeuroML.LEMS.Parser
+  build-depends:       base >= 4.7 && < 5
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: git://github.com/lisphacker/hsLEMS
