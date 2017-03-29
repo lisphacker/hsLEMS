@@ -21,7 +21,7 @@ executable hsLEMS
 
 library
   hs-source-dirs:      src
-  exposed-modules:     NeuroML.LEMS.Parser
+  exposed-modules:     NeuroML.LEMS.Model, NeuroML.LEMS.Parser
   build-depends:       base >= 4.7 && < 5, hxt >= 9.0.0
   default-language:    Haskell2010
 
