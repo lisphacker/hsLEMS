@@ -68,8 +68,9 @@ data Parameter = Parameter { paramName      :: String -- ^ Parameter name
                            } deriving (Show)
 
 -- | Definition of a component type.
-data ComponentType = ComponentType { compTypeName    :: String  -- ^ Name of the component type
-                                   , compTypeExtends :: String  -- ^ Name of the base coomponent type
+data ComponentType = ComponentType { compTypeName       :: String      -- ^ Name of the component type
+                                   , compTypeExtends    :: String      -- ^ Name of the base component type
+                                   , compTypeParameters :: [Parameter] -- ^ Component type parameters
                                    } deriving (Show)
 
 {-
