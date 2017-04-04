@@ -14,14 +14,14 @@ cabal-version:       >=1.10
 extra-source-files:  README.md
 
 executable hsLEMS
-  hs-source-dirs:      src
+  hs-source-dirs:      prog-src
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
 
 library
   hs-source-dirs:      src
-  exposed-modules:     NeuroML.LEMS.Model, NeuroML.LEMS.Parser, NeuroML.LEMS.Model2
+  exposed-modules:     Language.NeuroML.LEMS.Model, Language.NeuroML.LEMS.Parser
   build-depends:       base >= 4.7 && < 5, hxt >= 9.0.0
   default-language:    Haskell2010
 
