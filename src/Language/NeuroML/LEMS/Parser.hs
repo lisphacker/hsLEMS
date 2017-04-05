@@ -79,16 +79,21 @@ parseInclude = atTag "Include" >>>
     file <- getAttrValue "file" -< include
     returnA -< Include file
 
-
+parseComponentType = atTag "ComponentType" >>>
+  proc compType -> do
+    name      <- getAttrValue "name"    -< compType
+    extends   <- getAttrValue "extends" -< compType
+    returnA -< ComponentType name extends [] [] [] [] Nothing
        
 parseLems = atTag "Lems" >>>
   proc lems -> do
-    includes   <- listA parseInclude   -< lems
-    dimensions <- listA parseDimension -< lems
-    units      <- listA parseUnit      -< lems
-    assertions <- listA parseAssertion -< lems
-    constants  <- listA parseConstant  -< lems
-    returnA -< Lems includes dimensions units assertions constants [] [] Nothing
+    includes   <- listA parseInclude        -< lems
+    dimensions <- listA parseDimension      -< lems
+    units      <- listA parseUnit           -< lems
+    assertions <- listA parseAssertion      -< lems
+    constants  <- listA parseConstant       -< lems
+    compTypes  <- listA parseComponentType  -< lems
+    returnA -< Lems includes dimensions units assertions constants compTypes [] Nothing
 
 
 parseXML xmlText = readString [ withValidate no
