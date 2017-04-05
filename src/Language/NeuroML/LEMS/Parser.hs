@@ -79,11 +79,92 @@ parseInclude = atTag "Include" >>>
     file <- getAttrValue "file" -< include
     returnA -< Include file
 
+parseParameter = atTag "Parameter" >>>
+  proc parameter -> do
+    name      <- getAttrValue "name"      -< parameter
+    dimension <- getAttrValue "dimension" -< parameter
+    returnA -< Parameter name dimension
+    
+parseFixed = atTag "Fixed" >>>
+  proc fixed -> do
+    name   <- getAttrValue "name"      -< fixed
+    value  <- getAttrValue "value" -< fixed
+    returnA -< Fixed name value
+    
+parseExposure = atTag "Exposure" >>>
+  proc exposure -> do
+    name      <- getAttrValue "name"      -< exposure
+    dimension <- getAttrValue "dimension" -< exposure
+    returnA -< Exposure name dimension
+    
+parseEventPort = atTag "EventPort" >>>
+  proc eventPort -> do
+    name      <- getAttrValue "name"      -< eventPort
+    dimension <- getAttrValue "dimension" -< eventPort
+    returnA -< EventPort name dimension
+
+parseStateVariable = atTag "StateVariable" >>>
+  proc stateVariable -> do
+    name      <- getAttrValue "name"      -< stateVariable
+    exposure  <- getAttrValue "exposure"  -< stateVariable
+    dimension <- getAttrValue "dimension" -< stateVariable
+    returnA -< StateVariable name exposure dimension
+
+parseTimeDerivative = atTag "TimeDerivative" >>>
+  proc timeDerivative -> do
+    variable <- getAttrValue "variable" -< timeDerivative
+    value    <- getAttrValue "value"    -< timeDerivative
+    returnA -< TimeDerivative variable value
+
+parseStateAssignment = atTag "StateAssignment" >>>
+  proc stateAssignment -> do
+    variable <- getAttrValue "variable" -< stateAssignment
+    value    <- getAttrValue "value"    -< stateAssignment
+    returnA -< StateAssignment variable value
+
+parseEventOut = atTag "EventOut" >>>
+  proc eventOut -> do
+    port <- getAttrValue "port" -< eventOut
+    returnA -< EventOut port
+    
+parseEventAction = parseStateAssignment `orElse` parseEventOut
+
+parseOnStart = atTag "OnStart" >>>
+  proc onStart -> do
+    eventActions <- listA parseEventAction -< onStart
+    returnA -< OnStart eventActions
+
+parseOnCondition = atTag "OnCondition" >>>
+  proc onCondition -> do
+    test <- getAttrValue "test" -< onCondition
+    eventActions <- listA parseEventAction -< onCondition
+    returnA -< OnCondition test eventActions
+
+parseOnEvent = atTag "OnEvent" >>>
+  proc onEvent -> do
+    port <- getAttrValue "port" -< onEvent
+    eventActions <- listA parseEventAction -< onEvent
+    returnA -< OnEvent port eventActions
+
+parseEventHandler = parseOnStart `orElse` (parseOnCondition `orElse` parseOnEvent)
+
+parseDynamics = atTag "Dynamics" >>>
+  proc dynamics -> do
+    stateVariables  <- listA parseStateVariable  -< dynamics
+    timeDerivatives <- listA parseTimeDerivative -< dynamics
+    eventHandlers   <- listA parseEventHandler   -< dynamics
+    returnA -< Just $ Dynamics stateVariables timeDerivatives eventHandlers
+    
 parseComponentType = atTag "ComponentType" >>>
   proc compType -> do
-    name      <- getAttrValue "name"    -< compType
-    extends   <- getAttrValue "extends" -< compType
-    returnA -< ComponentType name extends [] [] [] [] Nothing
+    name            <- getAttrValue "name"               -< compType
+    extends         <- getAttrValue "extends"            -< compType
+    parameters      <- listA parseParameter              -< compType
+    fixedParameters <- listA parseFixed                  -< compType
+    exposures       <- listA parseExposure               -< compType
+    eventPorts      <- listA parseEventPort              -< compType
+    dynamics        <- withDefault parseDynamics Nothing -< compType
+    returnA -< ComponentType name extends parameters fixedParameters exposures eventPorts dynamics
        
 parseLems = atTag "Lems" >>>
   proc lems -> do
@@ -106,3 +187,6 @@ test1 = do
   contents <- readFile "/home/gautham/work/NeuroML/LEMS/examples/example1.xml"
   models <- runX (parseXML contents >>> parseLems)
   putStrLn $ show $ (head models)
+  putStrLn ""
+  putStrLn $ show $ (lemsCompTypes (head models) !! 2)
+  

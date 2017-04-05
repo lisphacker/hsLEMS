@@ -90,16 +90,39 @@ data Action = StateAssignment { saVariable :: String -- ^ State variable to be a
                               }
             | EventOut { eoPort :: String } -- ^ Activate the specified output event port.
             deriving (Show)
-            
--- | Definition of an event handler.
+
+{-
+-- | Definition of a startup handler.
+data OnStart = OnStart { osActions :: [Action] -- ^ List of action to perform on startup
+                       } deriving (Show)
+
+-- | Definition of a condition handler.
+data OnCondition = OnCondition { ocTest :: String      -- ^ The port for which this handler responds to
+                               , ocActions :: [Action] -- ^ List of action to perform in response to event
+                               } deriving (Show)
+
+-- | Definition of an event port handler.
 data OnEvent = OnEvent { oePort    :: String   -- ^ The port for which this handler responds to
                        , oeActions :: [Action] -- ^ List of action to perform in response to event
                        } deriving (Show)
+-}
+
+-- | Definition of an event handler (startup/condition/port)
+data EventHandler = OnStart { osActions :: [Action] -- ^ List of action to perform on startup
+                            }
+                  | OnCondition { ocTest :: String      -- ^ The port for which this handler responds to
+                                , ocActions :: [Action] -- ^ List of action to perform in response to event
+                                }
+                  | OnEvent { oePort    :: String   -- ^ The port for which this handler responds to
+                            , oeActions :: [Action] -- ^ List of action to perform in response to event
+                            }
+                  deriving (Show)
+
 
 -- | Definition of a dynamics container.
-data Dynamics = Dynamics { dynStateVariables :: [StateVariable]   -- ^ State variable definitions.
-                         , dynTimeDerivatives :: [TimeDerivative] -- ^ Derivatives for state variables.
-                         , dynEventHandlers   :: [OnEvent]        -- ^ Event handlers
+data Dynamics = Dynamics { dynStateVariables    :: [StateVariable]  -- ^ State variable definitions.
+                         , dynTimeDerivatives   :: [TimeDerivative] -- ^ Derivatives for state variables.
+                         , dynEventHandlers     :: [EventHandler]   -- ^ Event handlers
                          } deriving (Show)
 
 -- | Definition of a component type.
