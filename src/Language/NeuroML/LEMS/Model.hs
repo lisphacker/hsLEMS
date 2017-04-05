@@ -111,3 +111,20 @@ data ComponentType = ComponentType { compTypeName            :: String      -- ^
                                    , compTypeEventPorts      :: [EventPort] -- ^ Event ports
                                    , compTypeDynamics        :: Maybe Dynamics -- ^ Dynamics
                                    } deriving (Show)
+
+-- | Definition of a container.
+data Component = Component { compId      :: String  -- ^ Component id
+                           , compName    :: String  -- ^ Component name
+                           , compType    :: String  -- ^ Component type
+                           , compExtends :: String  -- ^ Name of base component.
+                           } deriving (Show)
+-- | Main container.
+data Lems = Lems { lemsIncludes   :: [Include]
+                 , lemsDimensions :: [Dimension]
+                 , lemsUnits      :: [Unit]
+                 , lemsAssertions :: [Assertion]
+                 , lemsConstants  :: [Constant]
+                 , lemsCompTypes  :: [ComponentType]
+                 , lemsComponents :: [Component]
+                 , lemsTarget     :: Maybe Target
+                 } deriving (Show)
