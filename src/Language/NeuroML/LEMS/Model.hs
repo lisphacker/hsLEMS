@@ -11,6 +11,11 @@ LEMS model after being parsed from XML.
 -}
 module Language.NeuroML.LEMS.Model where
 
+import Data.Map.Strict
+
+import Text.XML.HXT.Core hiding (xread)
+import Data.Tree.NTree.TypeDefs
+
 -- | Definition of a dimension as a combinations of base SI units.
 data Dimension = Dimension { dimName        :: String  -- ^ Name of the dimension
                            , dimMass        :: Int     -- ^ Mass (kilogram, kg)
@@ -136,10 +141,12 @@ data ComponentType = ComponentType { compTypeName            :: String      -- ^
                                    } deriving (Show)
 
 -- | Definition of a container.
-data Component = Component { compId      :: String  -- ^ Component id
-                           , compName    :: String  -- ^ Component name
-                           , compType    :: String  -- ^ Component type
-                           , compExtends :: String  -- ^ Name of base component.
+data Component = Component { compId         :: String            -- ^ Component id
+                           , compName       :: String            -- ^ Component name
+                           , compType       :: String            -- ^ Component type
+                           , compExtends    :: String            -- ^ Name of base component
+                           , compParameters :: Map String String -- ^ Parameters
+                           --, compParameters :: [XmlTree]
                            } deriving (Show)
 -- | Main container.
 data Lems = Lems { lemsIncludes   :: [Include]

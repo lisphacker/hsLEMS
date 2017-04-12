@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Arrows, NoMonomorphismRestriction #-}
 {-|
 Module      : Language.NeuroML.LEMS.Model
@@ -12,10 +13,21 @@ LEMS model after being parsed from XML.
 -}
 module Language.NeuroML.LEMS.Parser where
 
-import Text.XML.HXT.Core
+import Text.XML.HXT.Core hiding (xread)
 import Language.NeuroML.LEMS.Model
 
+import qualified Data.Map.Strict as M
+
+import Text.XML.HXT.Parser.XmlParsec (xread)
+import Text.XML.HXT.Arrow.XmlState
+import Data.Tree.NTree.TypeDefs
+
+hasNames []         = hasName ""
+hasNames (tag:tags) = (hasName tag) `orElse` (hasNames tags)
+
 atTag tag = deep (isElem >>> hasName tag)
+
+notAtTags tags = deep (isElem >>> neg (hasNames tags))
 
 strToInt i s = let l = reads s :: [(Int, String)]
              in if length l == 0 then
@@ -30,6 +42,18 @@ strToDouble d s = let l = reads s :: [(Double, String)]
                        (fst . head) l
                   
 
+getAttrMap skipNames trees = getAttrMap2 M.empty trees
+  where getAttrMap2 map []     = map
+        getAttrMap2 map (t:ts) = let (name, value) = (getAttr t)
+                                 in if name `elem` skipNames
+                                    then
+                                      getAttrMap2 map ts
+                                    else
+                                      getAttrMap2 (M.insert name value map) ts
+          where getAttr (NTree (XAttr name) children) = (cleanString name, getAttrValue (head children))
+                getAttrValue (NTree (XText value) _) = cleanString value
+                cleanString name = filter (\c -> c /= '"') $ show name
+          
 parseDimension = atTag "Dimension" >>>
   proc dim -> do
     name <- getAttrValue "name" -< dim
@@ -165,16 +189,58 @@ parseComponentType = atTag "ComponentType" >>>
     eventPorts      <- listA parseEventPort              -< compType
     dynamics        <- withDefault parseDynamics Nothing -< compType
     returnA -< ComponentType name extends parameters fixedParameters exposures eventPorts dynamics
+
+parseComponentExplicit = atTag "Component" >>>
+  proc comp -> do
+    id      <- getAttrValue "id"      -< comp
+    name    <- getAttrValue "name"    -< comp
+    extends <- getAttrValue "extends" -< comp
+    ctype   <- getAttrValue "type"    -< comp
+    attrList <- listA getAttrl         -< comp
+    returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
+
+lemsTags = ["Lems",
+            "Dimension", "Unit", "Assertion",
+            "Include", "Constant",
+            "ComponentType", "Component", "Target",
+            "Parameter", "Fixed", "Exposure",
+            "Children",
+            "EventPort",
+            "Dynamics", "StateVariable", "TimeDerivative",
+            "OnStart", "OnCondition", "OnEvent",
+            "StateAssignment", "EventOut",
+            "Structure"]
+
+parseComponentImplicit = notAtTags lemsTags >>>
+  proc comp -> do
+    id       <- getName                -< comp
+    name     <- getAttrValue "name"    -< comp
+    extends  <- getAttrValue "extends" -< comp
+    ctype    <- getAttrValue "type"    -< comp
+    attrList <- listA getAttrl         -< comp
+    returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
+
+--parseComponent = parseComponentExplicit `orElse` parseComponentImplicit
+parseComponent = parseComponentImplicit
+
+parseTarget = atTag "Target" >>>
+  proc tgt -> do
+    component  <- getAttrValue "component"  -< tgt
+    reportFile <- getAttrValue "reportFile" -< tgt
+    timesFile  <- getAttrValue "timesFile"  -< tgt
+    returnA -< Just $ Target component reportFile timesFile
        
 parseLems = atTag "Lems" >>>
   proc lems -> do
-    includes   <- listA parseInclude        -< lems
-    dimensions <- listA parseDimension      -< lems
-    units      <- listA parseUnit           -< lems
-    assertions <- listA parseAssertion      -< lems
-    constants  <- listA parseConstant       -< lems
-    compTypes  <- listA parseComponentType  -< lems
-    returnA -< Lems includes dimensions units assertions constants compTypes [] Nothing
+    includes   <- listA parseInclude       -< lems
+    dimensions <- listA parseDimension     -< lems
+    units      <- listA parseUnit          -< lems
+    assertions <- listA parseAssertion     -< lems
+    constants  <- listA parseConstant      -< lems
+    compTypes  <- listA parseComponentType -< lems
+    components <- listA parseComponent     -< lems
+    tgt        <- withDefault parseTarget Nothing -< lems
+    returnA -< Lems includes dimensions units assertions constants compTypes components tgt
 
 
 parseXML xmlText = readString [ withValidate no
@@ -189,4 +255,11 @@ test1 = do
   putStrLn $ show $ (head models)
   putStrLn ""
   putStrLn $ show $ (lemsCompTypes (head models) !! 2)
+  putStrLn ""
+  putStrLn $ show $ (lemsComponents (head models) !! 0)
+  putStrLn $ show $ map compId (lemsComponents (head models))
   
+test2 = do
+    contents <- readFile "/home/gautham/work/NeuroML/LEMS/examples/example1.xml"
+    putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
+    putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
