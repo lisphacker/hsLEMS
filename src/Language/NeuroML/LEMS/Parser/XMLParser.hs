@@ -1,6 +1,6 @@
 {-# LANGUAGE Arrows, NoMonomorphismRestriction #-}
 {-|
-Module      : Language.NeuroML.LEMS.Model
+Module      : Language.NeuroML.LEMS.Parser.XMLParser
 Description : Parsed LEMS model
 Copyright   : (c) Gautham Ganapathy, 2017
 License     : BSD
@@ -10,10 +10,10 @@ Portability : POSIX
 
 LEMS model after being parsed from XML.
 -}
-module Language.NeuroML.LEMS.Parser where
+module Language.NeuroML.LEMS.Parser.XMLParser where
 
 import Text.XML.HXT.Core hiding (xread)
-import Language.NeuroML.LEMS.Model
+import Language.NeuroML.LEMS.Parser.AST
 
 import qualified Data.Map.Strict as M
 
