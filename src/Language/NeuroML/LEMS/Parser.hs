@@ -203,25 +203,33 @@ lemsTags = ["Lems",
             "Dimension", "Unit", "Assertion",
             "Include", "Constant",
             "ComponentType", "Component", "Target",
-            "Parameter", "Fixed", "Exposure",
-            "Children",
+            "Parameter", "Fixed", "DerivedParameter", "Exposure",
+            "Requirement",
+            "Child", "Children",
+            "ComponentReference",
             "EventPort",
-            "Dynamics", "StateVariable", "TimeDerivative",
+            
+            "Dynamics",
+            "StateVariable", "TimeDerivative",
+            "DerivedVariable",
             "OnStart", "OnCondition", "OnEvent",
             "StateAssignment", "EventOut",
-            "Structure"]
+            
+            "Structure",
+            "ChildInstance"]
 
 parseComponentImplicit = notAtTags lemsTags >>>
   proc comp -> do
-    id       <- getName                -< comp
+    id       <- getAttrValue "id"      -< comp
     name     <- getAttrValue "name"    -< comp
     extends  <- getAttrValue "extends" -< comp
-    ctype    <- getAttrValue "type"    -< comp
+    ctype    <- getName                -< comp
     attrList <- listA getAttrl         -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
 
 --parseComponent = parseComponentExplicit `orElse` parseComponentImplicit
-parseComponent = parseComponentImplicit
+parseComponent = parseComponentImplicit `orElse` parseComponentExplicit
+--parseComponent = parseComponentImplicit
 
 parseTarget = atTag "Target" >>>
   proc tgt -> do
@@ -238,9 +246,10 @@ parseLems = atTag "Lems" >>>
     assertions <- listA parseAssertion     -< lems
     constants  <- listA parseConstant      -< lems
     compTypes  <- listA parseComponentType -< lems
-    components <- listA parseComponent     -< lems
+    compsExplicit <- listA parseComponentExplicit     -< lems
+    compsImplicit <- listA parseComponentImplicit     -< lems
     tgt        <- withDefault parseTarget Nothing -< lems
-    returnA -< Lems includes dimensions units assertions constants compTypes components tgt
+    returnA -< Lems includes dimensions units assertions constants compTypes (compsExplicit ++ compsImplicit) tgt
 
 
 parseXML xmlText = readString [ withValidate no
