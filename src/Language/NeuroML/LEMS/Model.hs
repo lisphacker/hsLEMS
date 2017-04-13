@@ -88,6 +88,7 @@ data StateVariable = StateVariable { svName      :: String -- ^ State variable n
 data DerivedVariable = DerivedVariable { dvName      :: String -- ^ Derived variable name
                                        , dvExposure  :: String -- ^ Derived variable exposure
                                        , dvDimension :: String -- ^ Derived variable dimensions
+                                       , dvValue     :: String -- ^ Value expression
                                        , dvSelect    :: String -- ^ Target collection selection
                                        , dvReduce    :: String -- ^ Reduce operation
                                        , dvRequired  :: String -- ^ Set to OK if variable is required

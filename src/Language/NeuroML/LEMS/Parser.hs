@@ -139,10 +139,11 @@ parseDerivedVariable = atTag "DerivedVariable" >>>
     name      <- getAttrValue "name"      -< derivedVariable
     exposure  <- getAttrValue "exposure"  -< derivedVariable
     dimension <- getAttrValue "dimension" -< derivedVariable
+    value     <- getAttrValue "value"     -< derivedVariable
     select    <- getAttrValue "select"    -< derivedVariable
     reduce    <- getAttrValue "reduce"    -< derivedVariable
     required  <- getAttrValue "required"  -< derivedVariable
-    returnA -< DerivedVariable name exposure dimension select reduce required
+    returnA -< DerivedVariable name exposure dimension value select reduce required
 
 parseTimeDerivative = atTag "TimeDerivative" >>>
   proc timeDerivative -> do
@@ -161,24 +162,30 @@ parseEventOut = atTag "EventOut" >>>
     port <- getAttrValue "port" -< eventOut
     returnA -< EventOut port
     
-parseEventAction = parseStateAssignment `orElse` parseEventOut
+--parseEventAction = parseStateAssignment `spanA` parseEventOut
 
 parseOnStart = atTag "OnStart" >>>
   proc onStart -> do
-    eventActions <- listA parseEventAction -< onStart
-    returnA -< OnStart eventActions
+    --eventActions <- listA parseEventAction -< onStart
+    stateAssignments <- listA parseStateAssignment -< onStart
+    eventOuts        <- listA parseEventOut        -< onStart
+    returnA -< OnStart (stateAssignments ++ eventOuts) --eventActions
 
 parseOnCondition = atTag "OnCondition" >>>
   proc onCondition -> do
     test <- getAttrValue "test" -< onCondition
-    eventActions <- listA parseEventAction -< onCondition
-    returnA -< OnCondition test eventActions
+    --eventActions <- listA parseEventAction -< onCondition
+    stateAssignments <- listA parseStateAssignment -< onCondition
+    eventOuts        <- listA parseEventOut        -< onCondition
+    returnA -< OnCondition test (stateAssignments ++ eventOuts) --eventActions
 
 parseOnEvent = atTag "OnEvent" >>>
   proc onEvent -> do
     port <- getAttrValue "port" -< onEvent
-    eventActions <- listA parseEventAction -< onEvent
-    returnA -< OnEvent port eventActions
+    --eventActions <- listA parseEventAction -< onEvent
+    stateAssignments <- listA parseStateAssignment -< onEvent
+    eventOuts        <- listA parseEventOut        -< onEvent
+    returnA -< OnEvent port (stateAssignments ++ eventOuts) --eventActions
 
 parseEventHandler = parseOnStart `orElse` (parseOnCondition `orElse` parseOnEvent)
 
@@ -275,7 +282,7 @@ test1 = do
   models <- runX (parseXML contents >>> parseLems)
   putStrLn $ show $ (head models)
   putStrLn ""
-  putStrLn $ show $ (lemsCompTypes (head models) !! 2)
+  putStrLn $ show $ filter (\ctype -> compTypeName ctype == "spikeGenerator2") $ lemsCompTypes (head models)
   putStrLn ""
   putStrLn $ show $ (lemsComponents (head models) !! 0)
   putStrLn $ show $ map compId (lemsComponents (head models))
