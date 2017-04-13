@@ -78,6 +78,16 @@ data EventPort = EventPort { epName      :: String -- ^ Event port name
                            , epDirection :: String -- ^ Direction (IN/OUT)
                            } deriving (Show)
 
+-- | Definition of a child  of a given type.
+data Child = Child { chName :: String -- ^ Name
+                   , chType :: String -- ^ Type
+                   } deriving (Show)
+
+-- | Definition of children of a given type
+data Children = Children { chnName :: String -- ^ Name
+                         , chnType :: String -- ^ Type
+                         } deriving (Show)
+
 -- | Definition of a state variable.
 data StateVariable = StateVariable { svName      :: String -- ^ State variable name
                                    , svExposure  :: String -- ^ State variable exposure
@@ -133,7 +143,6 @@ data EventHandler = OnStart { osActions :: [Action] -- ^ List of action to perfo
                             }
                   deriving (Show)
 
-
 -- | Definition of a dynamics container.
 data Dynamics = Dynamics { dynStateVariables   :: [StateVariable]   -- ^ State variable definitions.
                          , dynTimeDerivatives  :: [TimeDerivative]  -- ^ Derivatives for state variables.
@@ -147,6 +156,8 @@ data ComponentType = ComponentType { compTypeName            :: String      -- ^
                                    , compTypeParameters      :: [Parameter] -- ^ Component type parameters
                                    , compTypeFixedParameters :: [Fixed]     -- ^ Fixed parameters
                                    , compTypeExposures       :: [Exposure]  -- ^ Exposures
+                                   , compTypeChildDefs       :: [Child]     -- ^ Child definitions
+                                   , compTypeChildrenDefs    :: [Children]  -- ^ Children definitions
                                    , compTypeEventPorts      :: [EventPort] -- ^ Event ports
                                    , compTypeDynamics        :: Maybe Dynamics -- ^ Dynamics
                                    } deriving (Show)

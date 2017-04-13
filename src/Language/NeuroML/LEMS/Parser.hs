@@ -120,7 +120,19 @@ parseExposure = atTag "Exposure" >>>
     name      <- getAttrValue "name"      -< exposure
     dimension <- getAttrValue "dimension" -< exposure
     returnA -< Exposure name dimension
-    
+
+parseChild = atTag "Child" >>>
+  proc child -> do
+    name  <- getAttrValue "name" -< child
+    ctype <- getAttrValue "type" -< child
+    returnA -< Child name ctype
+
+parseChildren = atTag "Children" >>>
+  proc children -> do
+    name  <- getAttrValue "name" -< children
+    ctype <- getAttrValue "type" -< children
+    returnA -< Children name ctype
+
 parseEventPort = atTag "EventPort" >>>
   proc eventPort -> do
     name      <- getAttrValue "name"      -< eventPort
@@ -205,9 +217,11 @@ parseComponentType = atTag "ComponentType" >>>
     parameters      <- listA parseParameter              -< compType
     fixedParameters <- listA parseFixed                  -< compType
     exposures       <- listA parseExposure               -< compType
+    childDefs       <- listA parseChild                  -< compType
+    childrenDefs    <- listA parseChildren               -< compType
     eventPorts      <- listA parseEventPort              -< compType
     dynamics        <- withDefault parseDynamics Nothing -< compType
-    returnA -< ComponentType name extends parameters fixedParameters exposures eventPorts dynamics
+    returnA -< ComponentType name extends parameters fixedParameters exposures childDefs childrenDefs eventPorts dynamics
 
 parseComponentExplicit = atTag "Component" >>>
   proc comp -> do
@@ -282,9 +296,10 @@ test1 = do
   models <- runX (parseXML contents >>> parseLems)
   putStrLn $ show $ (head models)
   putStrLn ""
-  putStrLn $ show $ filter (\ctype -> compTypeName ctype == "spikeGenerator2") $ lemsCompTypes (head models)
+  putStrLn $ show $ filter (\ctype -> compTypeName ctype == "HHGate") $ lemsCompTypes (head models)
   putStrLn ""
   putStrLn $ show $ (lemsComponents (head models) !! 0)
+  putStrLn ""
   putStrLn $ show $ map compId (lemsComponents (head models))
   
 test2 = do
