@@ -68,6 +68,13 @@ data Fixed = Fixed { fixedName  :: String -- ^ Fixed parameter name
                    , fixedValue :: String -- ^ Fixed parameter value
                    } deriving (Show)
 
+-- | Definition of a derived parameter
+data DerivedParameter = DerivedParameter { dpName      :: String -- ^ Parameter name
+                                         , dpDimension :: String -- ^ Dimension of the parameter
+                                         , dpSelect    :: String -- ^ Target selection path
+                                         , dpValue     :: String -- ^ Valu expression
+                                         } deriving (Show)
+
 -- | Specification of an exposed parameter (parameter visible from outside the component).
 data Exposure = Exposure { expName      :: String -- ^ Exposure name
                          , expDimension :: String -- ^ Exposure dimension
@@ -163,6 +170,7 @@ data ComponentType = ComponentType { compTypeName            :: String      -- ^
                                    , compTypeExtends         :: String      -- ^ Name of the base component type
                                    , compTypeParameters      :: [Parameter] -- ^ Component type parameters
                                    , compTypeFixedParameters :: [Fixed]     -- ^ Fixed parameters
+                                   , compTypeDerivedParameters :: [DerivedParameter] -- ^ Derived parameters
                                    , compTypeExposures       :: [Exposure]  -- ^ Exposures
                                    , compTypeChildDefs       :: [Child]     -- ^ Child definitions
                                    , compTypeChildrenDefs    :: [Children]  -- ^ Children definitions

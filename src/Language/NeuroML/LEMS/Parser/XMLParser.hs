@@ -21,6 +21,36 @@ import Text.XML.HXT.Parser.XmlParsec (xread)
 import Text.XML.HXT.Arrow.XmlState
 import Data.Tree.NTree.TypeDefs
 
+lemsTags = ["Lems",
+            "Dimension", "Unit", "Assertion",
+            "Include", "Constant",
+            "ComponentType", "Component", "Target",
+            "Parameter", "Fixed", "DerivedParameter", "Exposure",
+            "Requirement",
+            "Child", "Children", "Attachments", 
+            "Link", "ComponentReference",
+            "EventPort",
+
+            "Text", "Path",
+            
+            "Dynamics",
+            "StateVariable", "TimeDerivative",
+            "DerivedVariable",
+            "OnStart", "OnCondition", "OnEvent",
+            "StateAssignment", "EventOut",
+            "KineticScheme",
+            "Regime",
+            "OnEntry", "Transition",
+            
+            "Structure",
+            "ChildInstance", "MultiInstantiate",
+            "ForEach", "With",
+            "EventConnection",
+
+            "Simulation",
+            "Record", "DataDisplay", "DataWriter", "Run"]
+
+
 hasNames []         = hasName ""
 hasNames (tag:tags) = (hasName tag) `orElse` (hasNames tags)
 
@@ -113,6 +143,14 @@ parseFixed = atTag "Fixed" >>>
     name   <- getAttrValue "name"      -< fixed
     value  <- getAttrValue "value" -< fixed
     returnA -< Fixed name value
+    
+parseDerivedParameter = atTag "DerivedParameter" >>>
+  proc derivedParameter -> do
+    name      <- getAttrValue "name"      -< derivedParameter
+    dimension <- getAttrValue "dimension" -< derivedParameter
+    select    <- getAttrValue "select"    -< derivedParameter
+    value     <- getAttrValue "value"     -< derivedParameter
+    returnA -< DerivedParameter name dimension select value
     
 parseExposure = atTag "Exposure" >>>
   proc exposure -> do
@@ -225,6 +263,7 @@ parseComponentType = atTag "ComponentType" >>>
     extends         <- getAttrValue "extends"            -< compType
     parameters      <- listA parseParameter              -< compType
     fixedParameters <- listA parseFixed                  -< compType
+    derivedParameters <- listA parseDerivedParameter     -< compType
     exposures       <- listA parseExposure               -< compType
     childDefs       <- listA parseChild                  -< compType
     childrenDefs    <- listA parseChildren               -< compType
@@ -232,7 +271,7 @@ parseComponentType = atTag "ComponentType" >>>
     texts           <- listA parseText                   -< compType
     paths           <- listA parsePath                   -< compType
     dynamics        <- withDefault parseDynamics Nothing -< compType
-    returnA -< ComponentType name extends parameters fixedParameters exposures childDefs childrenDefs eventPorts texts paths dynamics
+    returnA -< ComponentType name extends parameters fixedParameters derivedParameters exposures childDefs childrenDefs eventPorts texts paths dynamics
 
 parseComponentExplicit = atTag "Component" >>>
   proc comp -> do
@@ -242,35 +281,6 @@ parseComponentExplicit = atTag "Component" >>>
     ctype   <- getAttrValue "type"    -< comp
     attrList <- listA getAttrl         -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
-
-lemsTags = ["Lems",
-            "Dimension", "Unit", "Assertion",
-            "Include", "Constant",
-            "ComponentType", "Component", "Target",
-            "Parameter", "Fixed", "DerivedParameter", "Exposure",
-            "Requirement",
-            "Child", "Children", "Attachments", 
-            "Link", "ComponentReference",
-            "EventPort",
-
-            "Text", "Path",
-            
-            "Dynamics",
-            "StateVariable", "TimeDerivative",
-            "DerivedVariable",
-            "OnStart", "OnCondition", "OnEvent",
-            "StateAssignment", "EventOut",
-            "KineticScheme",
-            "Regime",
-            "OnEntry", "Transition",
-            
-            "Structure",
-            "ChildInstance", "MultiInstantiate",
-            "ForEach", "With",
-            "EventConnection",
-
-            "Simulation",
-            "Record", "DataDisplay", "DataWriter", "Run"]
 
 parseComponentImplicit = notAtTags lemsTags >>>
   proc comp -> do
@@ -317,7 +327,7 @@ test file = do
   models <- runX (parseXML contents >>> parseLems)
   putStrLn $ show $ (head models)
   putStrLn ""
-  putStrLn $ show $ filter (\ctype -> compTypeName ctype == "Line") $ lemsCompTypes (head models)
+  putStrLn $ show $ filter (\ctype -> compTypeName ctype == "ChannelPopulation") $ lemsCompTypes (head models)
   putStrLn ""
   putStrLn $ show $ filter (\comp -> compId comp == "") $ lemsComponents (head models)
   putStrLn ""
