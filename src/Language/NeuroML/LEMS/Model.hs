@@ -78,6 +78,14 @@ data EventPort = EventPort { epName      :: String -- ^ Event port name
                            , epDirection :: String -- ^ Direction (IN/OUT)
                            } deriving (Show)
 
+-- | Definition of a text entry.
+data Text = Text { txtName :: String -- ^ Name of the text parameter
+                 } deriving (Show)
+
+-- | Definition of a path entry.
+data Path = Path { pthName :: String -- ^ Name of the path parameter
+                 } deriving (Show)
+
 -- | Definition of a child  of a given type.
 data Child = Child { chName :: String -- ^ Name
                    , chType :: String -- ^ Type
@@ -159,6 +167,8 @@ data ComponentType = ComponentType { compTypeName            :: String      -- ^
                                    , compTypeChildDefs       :: [Child]     -- ^ Child definitions
                                    , compTypeChildrenDefs    :: [Children]  -- ^ Children definitions
                                    , compTypeEventPorts      :: [EventPort] -- ^ Event ports
+                                   , compTypeTexts           :: [Text]      -- ^ Text definitions
+                                   , compTypePaths           :: [Path]      -- ^ Path definitions
                                    , compTypeDynamics        :: Maybe Dynamics -- ^ Dynamics
                                    } deriving (Show)
 

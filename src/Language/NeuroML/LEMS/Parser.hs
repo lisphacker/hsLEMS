@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Arrows, NoMonomorphismRestriction #-}
 {-|
 Module      : Language.NeuroML.LEMS.Model
@@ -139,6 +138,16 @@ parseEventPort = atTag "EventPort" >>>
     dimension <- getAttrValue "dimension" -< eventPort
     returnA -< EventPort name dimension
 
+parseText = atTag "Text" >>>
+  proc text -> do
+    name <- getAttrValue "name" -< text
+    returnA -< Text name
+    
+parsePath = atTag "Path" >>>
+  proc path -> do
+    name <- getAttrValue "name" -< path
+    returnA -< Path name
+    
 parseStateVariable = atTag "StateVariable" >>>
   proc stateVariable -> do
     name      <- getAttrValue "name"      -< stateVariable
@@ -220,8 +229,10 @@ parseComponentType = atTag "ComponentType" >>>
     childDefs       <- listA parseChild                  -< compType
     childrenDefs    <- listA parseChildren               -< compType
     eventPorts      <- listA parseEventPort              -< compType
+    texts           <- listA parseText                   -< compType
+    paths           <- listA parsePath                   -< compType
     dynamics        <- withDefault parseDynamics Nothing -< compType
-    returnA -< ComponentType name extends parameters fixedParameters exposures childDefs childrenDefs eventPorts dynamics
+    returnA -< ComponentType name extends parameters fixedParameters exposures childDefs childrenDefs eventPorts texts paths dynamics
 
 parseComponentExplicit = atTag "Component" >>>
   proc comp -> do
@@ -238,18 +249,28 @@ lemsTags = ["Lems",
             "ComponentType", "Component", "Target",
             "Parameter", "Fixed", "DerivedParameter", "Exposure",
             "Requirement",
-            "Child", "Children",
-            "ComponentReference",
+            "Child", "Children", "Attachments", 
+            "Link", "ComponentReference",
             "EventPort",
+
+            "Text", "Path",
             
             "Dynamics",
             "StateVariable", "TimeDerivative",
             "DerivedVariable",
             "OnStart", "OnCondition", "OnEvent",
             "StateAssignment", "EventOut",
+            "KineticScheme",
+            "Regime",
+            "OnEntry", "Transition",
             
             "Structure",
-            "ChildInstance"]
+            "ChildInstance", "MultiInstantiate",
+            "ForEach", "With",
+            "EventConnection",
+
+            "Simulation",
+            "Record", "DataDisplay", "DataWriter", "Run"]
 
 parseComponentImplicit = notAtTags lemsTags >>>
   proc comp -> do
@@ -291,17 +312,21 @@ parseXML xmlText = readString [ withValidate no
 
 
 
-test1 = do
-  contents <- readFile "/home/gautham/work/NeuroML/LEMS/examples/example1.xml"
+test file = do
+  contents <- readFile file
   models <- runX (parseXML contents >>> parseLems)
   putStrLn $ show $ (head models)
   putStrLn ""
-  putStrLn $ show $ filter (\ctype -> compTypeName ctype == "HHGate") $ lemsCompTypes (head models)
+  putStrLn $ show $ filter (\ctype -> compTypeName ctype == "Line") $ lemsCompTypes (head models)
   putStrLn ""
-  putStrLn $ show $ (lemsComponents (head models) !! 0)
+  putStrLn $ show $ filter (\comp -> compId comp == "") $ lemsComponents (head models)
   putStrLn ""
   putStrLn $ show $ map compId (lemsComponents (head models))
-  
+
+testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFile
+
+test1 = testLems "example4.xml"
+
 test2 = do
     contents <- readFile "/home/gautham/work/NeuroML/LEMS/examples/example1.xml"
     putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
