@@ -84,6 +84,15 @@ data StateVariable = StateVariable { svName      :: String -- ^ State variable n
                                    , svDimension :: String -- ^ State variable dimensions
                                    } deriving (Show)
 
+-- | Definition of a derived variable.
+data DerivedVariable = DerivedVariable { dvName      :: String -- ^ Derived variable name
+                                       , dvExposure  :: String -- ^ Derived variable exposure
+                                       , dvDimension :: String -- ^ Derived variable dimensions
+                                       , dvSelect    :: String -- ^ Target collection selection
+                                       , dvReduce    :: String -- ^ Reduce operation
+                                       , dvRequired  :: String -- ^ Set to OK if variable is required
+                                       } deriving (Show)
+
 -- | Definition of the time derivative of a state variable.
 data TimeDerivative = TimeDerivative { tdVariable :: String -- ^ Variable name
                                      , tdValue    :: String -- ^ EXpression for the time derivative
@@ -125,9 +134,10 @@ data EventHandler = OnStart { osActions :: [Action] -- ^ List of action to perfo
 
 
 -- | Definition of a dynamics container.
-data Dynamics = Dynamics { dynStateVariables    :: [StateVariable]  -- ^ State variable definitions.
-                         , dynTimeDerivatives   :: [TimeDerivative] -- ^ Derivatives for state variables.
-                         , dynEventHandlers     :: [EventHandler]   -- ^ Event handlers
+data Dynamics = Dynamics { dynStateVariables   :: [StateVariable]   -- ^ State variable definitions.
+                         , dynTimeDerivatives  :: [TimeDerivative]  -- ^ Derivatives for state variables.
+                         , dynDerivedVariables :: [DerivedVariable] -- ^ Dervied variables.
+                         , dynEventHandlers    :: [EventHandler]    -- ^ Event handlers
                          } deriving (Show)
 
 -- | Definition of a component type.

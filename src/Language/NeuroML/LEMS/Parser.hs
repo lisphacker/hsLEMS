@@ -134,6 +134,16 @@ parseStateVariable = atTag "StateVariable" >>>
     dimension <- getAttrValue "dimension" -< stateVariable
     returnA -< StateVariable name exposure dimension
 
+parseDerivedVariable = atTag "DerivedVariable" >>>
+  proc derivedVariable -> do
+    name      <- getAttrValue "name"      -< derivedVariable
+    exposure  <- getAttrValue "exposure"  -< derivedVariable
+    dimension <- getAttrValue "dimension" -< derivedVariable
+    select    <- getAttrValue "select"    -< derivedVariable
+    reduce    <- getAttrValue "reduce"    -< derivedVariable
+    required  <- getAttrValue "required"  -< derivedVariable
+    returnA -< DerivedVariable name exposure dimension select reduce required
+
 parseTimeDerivative = atTag "TimeDerivative" >>>
   proc timeDerivative -> do
     variable <- getAttrValue "variable" -< timeDerivative
@@ -174,10 +184,12 @@ parseEventHandler = parseOnStart `orElse` (parseOnCondition `orElse` parseOnEven
 
 parseDynamics = atTag "Dynamics" >>>
   proc dynamics -> do
-    stateVariables  <- listA parseStateVariable  -< dynamics
-    timeDerivatives <- listA parseTimeDerivative -< dynamics
-    eventHandlers   <- listA parseEventHandler   -< dynamics
-    returnA -< Just $ Dynamics stateVariables timeDerivatives eventHandlers
+    stateVariables   <- listA parseStateVariable   -< dynamics
+    stateVariables   <- listA parseStateVariable   -< dynamics
+    timeDerivatives  <- listA parseTimeDerivative  -< dynamics
+    derivedVariables <- listA parseDerivedVariable -< dynamics
+    eventHandlers    <- listA parseEventHandler    -< dynamics
+    returnA -< Just $ Dynamics stateVariables timeDerivatives derivedVariables eventHandlers
     
 parseComponentType = atTag "ComponentType" >>>
   proc compType -> do
