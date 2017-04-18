@@ -54,9 +54,10 @@ lemsTags = ["Lems",
 hasNames []         = hasName ""
 hasNames (tag:tags) = (hasName tag) `orElse` (hasNames tags)
 
-atTag tag = deep (isElem >>> hasName tag)
+atDeepTag tag = deep (isElem >>> hasName tag)
+atTag tag =  (isElem >>> hasName tag)
 
-notAtTags tags = deep (isElem >>> neg (hasNames tags))
+notAtTags tags =  (isElem >>> neg (hasNames tags))
 
 strToInt i s = let l = reads s :: [(Int, String)]
              in if length l == 0 then
@@ -69,7 +70,10 @@ strToDouble d s = let l = reads s :: [(Double, String)]
                        d
                      else
                        (fst . head) l
-                  
+
+childListA parseFn = listA (getChildren >>> parseFn)
+childA parseFn = getChildren >>> parseFn
+
 
 getAttrMap skipNames trees = getAttrMap2 M.empty trees
   where getAttrMap2 map []     = map
@@ -221,64 +225,93 @@ parseEventOut = atTag "EventOut" >>>
     port <- getAttrValue "port" -< eventOut
     returnA -< EventOut port
     
---parseEventAction = parseStateAssignment `spanA` parseEventOut
+parseTransition = atTag "Transition" >>>
+  proc transition -> do
+    regime <- getAttrValue "regime" -< transition
+    returnA -< Transition regime
+    
+parseEventAction = parseStateAssignment `orElse` parseEventOut `orElse` parseTransition
 
 parseOnStart = atTag "OnStart" >>>
   proc onStart -> do
-    --eventActions <- listA parseEventAction -< onStart
-    stateAssignments <- listA parseStateAssignment -< onStart
-    eventOuts        <- listA parseEventOut        -< onStart
-    returnA -< OnStart (stateAssignments ++ eventOuts) --eventActions
+    eventActions <- childListA parseEventAction -< onStart
+    returnA -< OnStart eventActions
+
+parseOnEntry = atTag "OnEntry" >>>
+  proc onEntry -> do
+    eventActions <- childListA parseEventAction -< onEntry
+    returnA -< OnEntry eventActions
 
 parseOnCondition = atTag "OnCondition" >>>
   proc onCondition -> do
-    test <- getAttrValue "test" -< onCondition
-    --eventActions <- listA parseEventAction -< onCondition
-    stateAssignments <- listA parseStateAssignment -< onCondition
-    eventOuts        <- listA parseEventOut        -< onCondition
-    returnA -< OnCondition test (stateAssignments ++ eventOuts) --eventActions
+    test         <- getAttrValue "test"         -< onCondition
+    eventActions <- childListA parseEventAction -< onCondition
+    returnA -< OnCondition test eventActions
 
 parseOnEvent = atTag "OnEvent" >>>
   proc onEvent -> do
-    port <- getAttrValue "port" -< onEvent
-    --eventActions <- listA parseEventAction -< onEvent
-    stateAssignments <- listA parseStateAssignment -< onEvent
-    eventOuts        <- listA parseEventOut        -< onEvent
-    returnA -< OnEvent port (stateAssignments ++ eventOuts) --eventActions
+    port         <- getAttrValue "port"         -< onEvent
+    eventActions <- childListA parseEventAction -< onEvent
+    returnA -< OnEvent port eventActions
 
-parseEventHandler = parseOnStart `orElse` (parseOnCondition `orElse` parseOnEvent)
+parseEventHandler = parseOnStart `orElse` parseOnCondition `orElse` parseOnEvent `orElse` parseOnEntry
 
+parseRegime = atTag "Regime" >>>
+  proc regime -> do
+    name             <- getAttrValue "name"             -< regime
+    initial          <- getAttrValue "initial"          -< regime
+    stateVariables   <- childListA parseStateVariable   -< regime
+    stateVariables   <- childListA parseStateVariable   -< regime
+    timeDerivatives  <- childListA parseTimeDerivative  -< regime
+    derivedVariables <- childListA parseDerivedVariable -< regime
+    eventHandlers    <- childListA parseEventHandler    -< regime
+    returnA -< Regime name initial stateVariables timeDerivatives derivedVariables eventHandlers
+
+parseKineticScheme = atTag "KineticScheme" >>>
+  proc ks -> do
+    name        <- getAttrValue "name"          -< ks
+    nodes       <- getAttrValue "nodes"         -< ks
+    stateVar    <- getAttrValue "stateVariable" -< ks
+    edges       <- getAttrValue "edges"         -< ks
+    edgeSource  <- getAttrValue "edgeSource"    -< ks
+    edgeTarget  <- getAttrValue "edgeTarget"    -< ks
+    forwardRate <- getAttrValue "forwardRate"   -< ks
+    reverseRate <- getAttrValue "reverseRate"   -< ks
+    returnA -< KineticScheme name nodes stateVar edges edgeSource edgeTarget forwardRate reverseRate
+    
 parseDynamics = atTag "Dynamics" >>>
   proc dynamics -> do
-    stateVariables   <- listA parseStateVariable   -< dynamics
-    stateVariables   <- listA parseStateVariable   -< dynamics
-    timeDerivatives  <- listA parseTimeDerivative  -< dynamics
-    derivedVariables <- listA parseDerivedVariable -< dynamics
-    eventHandlers    <- listA parseEventHandler    -< dynamics
-    returnA -< Just $ Dynamics stateVariables timeDerivatives derivedVariables eventHandlers
+    stateVariables   <- childListA parseStateVariable   -< dynamics
+    stateVariables   <- childListA parseStateVariable   -< dynamics
+    timeDerivatives  <- childListA parseTimeDerivative  -< dynamics
+    derivedVariables <- childListA parseDerivedVariable -< dynamics
+    eventHandlers    <- childListA parseEventHandler    -< dynamics
+    regimes          <- childListA parseRegime          -< dynamics
+    kineticSchemes   <- childListA parseKineticScheme   -< dynamics
+    returnA -< Just $ Dynamics stateVariables timeDerivatives derivedVariables eventHandlers regimes kineticSchemes
     
 parseComponentType = atTag "ComponentType" >>>
   proc compType -> do
     name            <- getAttrValue "name"               -< compType
     extends         <- getAttrValue "extends"            -< compType
-    parameters      <- listA parseParameter              -< compType
-    fixedParameters <- listA parseFixed                  -< compType
-    derivedParameters <- listA parseDerivedParameter     -< compType
-    exposures       <- listA parseExposure               -< compType
-    childDefs       <- listA parseChild                  -< compType
-    childrenDefs    <- listA parseChildren               -< compType
-    eventPorts      <- listA parseEventPort              -< compType
-    texts           <- listA parseText                   -< compType
-    paths           <- listA parsePath                   -< compType
-    dynamics        <- withDefault parseDynamics Nothing -< compType
+    parameters      <- childListA parseParameter              -< compType
+    fixedParameters <- childListA parseFixed                  -< compType
+    derivedParameters <- childListA parseDerivedParameter     -< compType
+    exposures       <- childListA parseExposure               -< compType
+    childDefs       <- childListA parseChild                  -< compType
+    childrenDefs    <- childListA parseChildren               -< compType
+    eventPorts      <- childListA parseEventPort              -< compType
+    texts           <- childListA parseText                   -< compType
+    paths           <- childListA parsePath                   -< compType
+    dynamics        <- withDefault (childA parseDynamics) Nothing -< compType
     returnA -< ComponentType name extends parameters fixedParameters derivedParameters exposures childDefs childrenDefs eventPorts texts paths dynamics
 
 parseComponentExplicit = atTag "Component" >>>
   proc comp -> do
-    id      <- getAttrValue "id"      -< comp
-    name    <- getAttrValue "name"    -< comp
-    extends <- getAttrValue "extends" -< comp
-    ctype   <- getAttrValue "type"    -< comp
+    id       <- getAttrValue "id"      -< comp
+    name     <- getAttrValue "name"    -< comp
+    extends  <- getAttrValue "extends" -< comp
+    ctype    <- getAttrValue "type"    -< comp
     attrList <- listA getAttrl         -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
 
@@ -288,12 +321,10 @@ parseComponentImplicit = notAtTags lemsTags >>>
     name     <- getAttrValue "name"    -< comp
     extends  <- getAttrValue "extends" -< comp
     ctype    <- getName                -< comp
-    attrList <- listA getAttrl         -< comp
+    attrList <- listA getAttrl    -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
 
---parseComponent = parseComponentExplicit `orElse` parseComponentImplicit
-parseComponent = parseComponentImplicit `orElse` parseComponentExplicit
---parseComponent = parseComponentImplicit
+parseComponent = parseComponentExplicit `orElse` parseComponentImplicit
 
 parseTarget = atTag "Target" >>>
   proc tgt -> do
@@ -302,18 +333,17 @@ parseTarget = atTag "Target" >>>
     timesFile  <- getAttrValue "timesFile"  -< tgt
     returnA -< Just $ Target component reportFile timesFile
        
-parseLems = atTag "Lems" >>>
+parseLems = atDeepTag "Lems" >>>
   proc lems -> do
-    includes   <- listA parseInclude       -< lems
-    dimensions <- listA parseDimension     -< lems
-    units      <- listA parseUnit          -< lems
-    assertions <- listA parseAssertion     -< lems
-    constants  <- listA parseConstant      -< lems
-    compTypes  <- listA parseComponentType -< lems
-    compsExplicit <- listA parseComponentExplicit     -< lems
-    compsImplicit <- listA parseComponentImplicit     -< lems
+    includes   <- childListA parseInclude       -< lems
+    dimensions <- childListA parseDimension     -< lems
+    units      <- childListA parseUnit          -< lems
+    assertions <- childListA parseAssertion     -< lems
+    constants  <- childListA parseConstant      -< lems
+    compTypes  <- childListA parseComponentType -< lems
+    components <- childListA parseComponent     -< lems
     tgt        <- withDefault parseTarget Nothing -< lems
-    returnA -< Lems includes dimensions units assertions constants compTypes (compsExplicit ++ compsImplicit) tgt
+    returnA -< Lems includes dimensions units assertions constants compTypes components tgt
 
 
 parseXML xmlText = readString [ withValidate no
@@ -325,11 +355,22 @@ parseXML xmlText = readString [ withValidate no
 test file = do
   contents <- readFile file
   models <- runX (parseXML contents >>> parseLems)
+  let model = head models
+      ctype = head $ filter (\ctype -> compTypeName ctype == "KSGate") $ lemsCompTypes model
+      comp  = head $ filter (\ctype -> compTypeName ctype == "") $ lemsCompTypes model
   putStrLn $ show $ (head models)
   putStrLn ""
-  putStrLn $ show $ filter (\ctype -> compTypeName ctype == "ChannelPopulation") $ lemsCompTypes (head models)
   putStrLn ""
-  putStrLn $ show $ filter (\comp -> compId comp == "") $ lemsComponents (head models)
+  putStrLn ""
+  putStrLn $ show $ ctype
+  putStrLn ""
+  putStrLn $ show $ compTypeDynamics ctype
+  putStrLn ""
+  putStrLn ""
+  putStrLn ""
+  putStrLn $ show $ comp
+  putStrLn ""
+  putStrLn ""
   putStrLn ""
   putStrLn $ show $ map compId (lemsComponents (head models))
 

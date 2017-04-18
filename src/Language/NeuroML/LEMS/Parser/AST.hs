@@ -128,7 +128,8 @@ data TimeDerivative = TimeDerivative { tdVariable :: String -- ^ Variable name
 data Action = StateAssignment { saVariable :: String -- ^ State variable to be assigned to
                               , saValue    :: String -- ^ Value/expression being assigned
                               }
-            | EventOut { eoPort :: String } -- ^ Activate the specified output event port.
+            | EventOut { eoPort :: String } -- ^ Activate the specified output event port
+            | Transition { trRegime :: String } -- ^ Regime to transition to
             deriving (Show)
 
 {-
@@ -153,16 +154,40 @@ data EventHandler = OnStart { osActions :: [Action] -- ^ List of action to perfo
                   | OnCondition { ocTest :: String      -- ^ The port for which this handler responds to
                                 , ocActions :: [Action] -- ^ List of action to perform in response to event
                                 }
-                  | OnEvent { oePort    :: String   -- ^ The port for which this handler responds to
-                            , oeActions :: [Action] -- ^ List of action to perform in response to event
+                  | OnEvent { oevPort    :: String   -- ^ The port for which this handler responds to
+                            , oevActions :: [Action] -- ^ List of action to perform in response to event
+                            }
+                  | OnEntry { oenActions :: [Action] -- ^ List of action to perform in response to event
                             }
                   deriving (Show)
 
+-- | Definition of a dynamics regime.
+data Regime = Regime { regName             :: String            -- ^ Regime name
+                     , regInitial          :: String            -- ^ "true" if active regime on startup
+                     , regStateVariables   :: [StateVariable]   -- ^ State variable definitions.
+                     , regTimeDerivatives  :: [TimeDerivative]  -- ^ Derivatives for state variables.
+                     , regDerivedVariables :: [DerivedVariable] -- ^ Dervied variables.
+                     , regEventHandlers    :: [EventHandler]    -- ^ Event handlers
+                     } deriving (Show)
+
+-- | Definition of a kinetics scheme.
+data KineticScheme = KineticScheme { ksName          :: String -- ^ Scheme name
+                                   , ksNodes         :: String -- ^ Name of object list for nodes
+                                   , ksStateVariable :: String -- ^ Name of the scheme state variable for each node
+                                   , ksEdges         :: String -- ^ Name of object list for edges
+                                   , ksEdgeSource    :: String -- ^ Name of the parameter specifying edge source
+                                   , ksEdgeTarget    :: String -- ^ Name of the parameter specifying edge target
+                                   , ksForwardRate   :: String -- ^ Name of the parameter specifying forward rate
+                                   , ksReverseRate   :: String -- ^ Name of the parameter specifying reverse rate
+                                   } deriving (Show)
+                     
 -- | Definition of a dynamics container.
-data Dynamics = Dynamics { dynStateVariables   :: [StateVariable]   -- ^ State variable definitions.
-                         , dynTimeDerivatives  :: [TimeDerivative]  -- ^ Derivatives for state variables.
-                         , dynDerivedVariables :: [DerivedVariable] -- ^ Dervied variables.
+data Dynamics = Dynamics { dynStateVariables   :: [StateVariable]   -- ^ State variable definitions
+                         , dynTimeDerivatives  :: [TimeDerivative]  -- ^ Derivatives for state variables
+                         , dynDerivedVariables :: [DerivedVariable] -- ^ Dervied variables
                          , dynEventHandlers    :: [EventHandler]    -- ^ Event handlers
+                         , dynRegimes          :: [Regime]          -- ^ Dynamics regimes
+                         , dynKineticSchemes   :: [KineticScheme]   -- ^ Kinetic schemes
                          } deriving (Show)
 
 -- | Definition of a component type.
