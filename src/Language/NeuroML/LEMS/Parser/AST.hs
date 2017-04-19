@@ -300,7 +300,7 @@ data Component = Component { compId         :: String            -- ^ Component 
                            , compType       :: String            -- ^ Component type
                            , compExtends    :: String            -- ^ Name of base component
                            , compParameters :: Map String String -- ^ Parameters
-                           --, compParameters :: [XmlTree]
+                           , compChildren   :: [Component]       -- ^ Child components
                            } deriving (Show)
 -- | Main container.
 data Lems = Lems { lemsIncludes   :: [Include]

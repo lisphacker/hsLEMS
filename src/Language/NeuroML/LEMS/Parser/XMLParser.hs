@@ -422,18 +422,20 @@ parseComponentExplicit = atTag "Component" >>>
     extends  <- getAttrValue "extends" -< comp
     ctype    <- getAttrValue "type"    -< comp
     attrList <- listA getAttrl         -< comp
-    returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
+    children <- childListA (parseComponentImplicit lemsTags) -< comp
+    returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList) children
 
-parseComponentImplicit = notAtTags lemsTopLevelTags >>>
+parseComponentImplicit skipTags = notAtTags skipTags >>>
   proc comp -> do
     id       <- getAttrValue "id"      -< comp
     name     <- getAttrValue "name"    -< comp
     extends  <- getAttrValue "extends" -< comp
     ctype    <- getName                -< comp
     attrList <- listA getAttrl    -< comp
-    returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
+    children <- childListA (parseComponentImplicit lemsTags) -< comp
+    returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList) children
 
-parseComponent = parseComponentExplicit `orElse` parseComponentImplicit
+parseComponent = parseComponentExplicit `orElse` (parseComponentImplicit lemsTopLevelTags)
 
 parseTarget = atTag "Target" >>>
   proc tgt -> do
@@ -465,7 +467,7 @@ test file = do
   models <- runX (parseXML contents >>> parseLems)
   let model = head models
       ctype = listToMaybe $ filter (\ctype -> compTypeName ctype == "OutputColumn") $ lemsCompTypes model
-      comp  = listToMaybe $ filter (\ctype -> compTypeName ctype == "") $ lemsCompTypes model
+      comp  = listToMaybe $ filter (\c -> compId c == "na1") $ lemsComponents model
   putStrLn $ show $ (head models)
   putStrLn ""
   putStrLn ""
