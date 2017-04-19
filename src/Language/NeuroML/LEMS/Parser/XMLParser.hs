@@ -23,6 +23,10 @@ import Data.Tree.NTree.TypeDefs
 
 import Data.Maybe
 
+lemsTopLevelTags = ["Dimension", "Unit", "Assertion",
+                    "Include", "Constant",
+                    "ComponentType", "Component", "Target"]
+  
 lemsTags = ["Lems",
             "Dimension", "Unit", "Assertion",
             "Include", "Constant",
@@ -346,34 +350,70 @@ parseForEach = atTag "ForEach" >>>
     returnA -< ForEach instances as forEaches eventConnections
 
 parseStructure = atTag "Structure" >>>
-  proc forEach -> do
-    childInstances   <- childListA parseChildInstance    -< forEach
-    multiInstances   <- childListA parseMultiInstantiate -< forEach
-    eventConnections <- childListA parseEventConnection  -< forEach
-    withs            <- childListA parseWith             -< forEach
-    forEaches        <- childListA parseForEach          -< forEach
+  proc structure -> do
+    childInstances   <- childListA parseChildInstance    -< structure
+    multiInstances   <- childListA parseMultiInstantiate -< structure
+    eventConnections <- childListA parseEventConnection  -< structure
+    withs            <- childListA parseWith             -< structure
+    forEaches        <- childListA parseForEach          -< structure
     returnA -< Just $ Structure childInstances multiInstances eventConnections withs forEaches
 
+parseRecord = atTag "Record" >>>
+  proc record -> do
+    quantity  <- getAttrValue "quantity"  -< record
+    timeScale <- getAttrValue "timeScale" -< record
+    scale     <- getAttrValue "scale"     -< record
+    color     <- getAttrValue "color"     -< record
+    returnA -< Record quantity timeScale scale color
 
+parseDataWriter = atTag "DataWriter" >>>
+  proc dataWriter -> do
+    path     <- getAttrValue "path"     -< dataWriter
+    fileName <- getAttrValue "fileName" -< dataWriter
+    returnA -< DataWriter path fileName
+
+parseDataDisplay = atTag "DataDisplay" >>>
+  proc dataDisplay -> do
+    title      <- getAttrValue "title"      -< dataDisplay
+    dataRegion <- getAttrValue "dataRegion" -< dataDisplay
+    returnA -< DataDisplay title dataRegion
+
+parseRun = atTag "Run" >>>
+  proc run -> do
+    component <- getAttrValue "component" -< run
+    variable  <- getAttrValue "variable"  -< run
+    increment <- getAttrValue "increment" -< run
+    total     <- getAttrValue "total"     -< run
+    returnA -< Run component variable increment total
+
+parseSimulation = atTag "Simulation" >>>
+  proc simulation -> do
+    recorders    <- childListA parseRecord    -< simulation
+    dataWriters  <- childListA parseDataWriter    -< simulation
+    dataDisplays <- childListA parseDataDisplay    -< simulation
+    runs         <- childListA parseRun    -< simulation
+    returnA -< Just $ Simulation recorders dataWriters dataDisplays runs
+    
 parseComponentType = atTag "ComponentType" >>>
   proc compType -> do
-    name              <- getAttrValue "name"                         -< compType
-    extends           <- getAttrValue "extends"                      -< compType
-    parameters        <- childListA parseParameter                   -< compType
-    fixedParameters   <- childListA parseFixed                       -< compType
-    derivedParameters <- childListA parseDerivedParameter            -< compType
-    compRefs          <- childListA parseComponentReference          -< compType
-    links             <- childListA parseLink                        -< compType
-    exposures         <- childListA parseExposure                    -< compType
-    requirements      <- childListA parseRequirement                 -< compType
-    childDefs         <- childListA parseChild                       -< compType
-    childrenDefs      <- childListA parseChildren                    -< compType
-    eventPorts        <- childListA parseEventPort                   -< compType
-    texts             <- childListA parseText                        -< compType
-    paths             <- childListA parsePath                        -< compType
-    dynamics          <- withDefault (childA parseDynamics) Nothing  -< compType
-    structure         <- withDefault (childA parseStructure) Nothing -< compType
-    returnA -< ComponentType name extends parameters fixedParameters derivedParameters compRefs links exposures requirements childDefs childrenDefs eventPorts texts paths dynamics structure
+    name              <- getAttrValue "name"                          -< compType
+    extends           <- getAttrValue "extends"                       -< compType
+    parameters        <- childListA parseParameter                    -< compType
+    fixedParameters   <- childListA parseFixed                        -< compType
+    derivedParameters <- childListA parseDerivedParameter             -< compType
+    compRefs          <- childListA parseComponentReference           -< compType
+    links             <- childListA parseLink                         -< compType
+    exposures         <- childListA parseExposure                     -< compType
+    requirements      <- childListA parseRequirement                  -< compType
+    childDefs         <- childListA parseChild                        -< compType
+    childrenDefs      <- childListA parseChildren                     -< compType
+    eventPorts        <- childListA parseEventPort                    -< compType
+    texts             <- childListA parseText                         -< compType
+    paths             <- childListA parsePath                         -< compType
+    dynamics          <- withDefault (childA parseDynamics) Nothing   -< compType
+    structure         <- withDefault (childA parseStructure) Nothing  -< compType
+    simulation        <- withDefault (childA parseSimulation) Nothing -< compType
+    returnA -< ComponentType name extends parameters fixedParameters derivedParameters compRefs links exposures requirements childDefs childrenDefs eventPorts texts paths dynamics structure simulation
 
 parseComponentExplicit = atTag "Component" >>>
   proc comp -> do
@@ -384,7 +424,7 @@ parseComponentExplicit = atTag "Component" >>>
     attrList <- listA getAttrl         -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList)
 
-parseComponentImplicit = notAtTags lemsTags >>>
+parseComponentImplicit = notAtTags lemsTopLevelTags >>>
   proc comp -> do
     id       <- getAttrValue "id"      -< comp
     name     <- getAttrValue "name"    -< comp
@@ -411,7 +451,7 @@ parseLems = atDeepTag "Lems" >>>
     constants  <- childListA parseConstant      -< lems
     compTypes  <- childListA parseComponentType -< lems
     components <- childListA parseComponent     -< lems
-    tgt        <- withDefault parseTarget Nothing -< lems
+    tgt        <- withDefault (childA parseTarget) Nothing -< lems
     returnA -< Lems includes dimensions units assertions constants compTypes components tgt
 
 
@@ -424,7 +464,7 @@ test file = do
   contents <- readFile file
   models <- runX (parseXML contents >>> parseLems)
   let model = head models
-      ctype = listToMaybe $ filter (\ctype -> compTypeName ctype == "Population") $ lemsCompTypes model
+      ctype = listToMaybe $ filter (\ctype -> compTypeName ctype == "OutputColumn") $ lemsCompTypes model
       comp  = listToMaybe $ filter (\ctype -> compTypeName ctype == "") $ lemsCompTypes model
   putStrLn $ show $ (head models)
   putStrLn ""
@@ -432,7 +472,7 @@ test file = do
   putStrLn ""
   putStrLn $ show $ ctype
   putStrLn ""
-  putStrLn $ show $ fmap compTypeStructure $  ctype
+  putStrLn $ show $ fmap compTypeSimulation $  ctype
   putStrLn ""
   putStrLn ""
   putStrLn ""

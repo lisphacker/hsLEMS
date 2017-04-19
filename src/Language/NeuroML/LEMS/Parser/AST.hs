@@ -242,6 +242,37 @@ data Structure = Structure { strChildInstances   :: [ChildInstance]    -- ^ Sing
                            , strWith             :: [With]             -- ^ Variable assignments
                            , strForEach          :: [ForEach]          -- ^ Variable iterations
                            } deriving (Show)
+
+-- | Definition of a record spec.
+data Record = Record { recQuantity  :: String -- ^ Name of the parameter containing path to the quantity to be recorded
+                     , recTimeScale :: String -- ^ Name of the parameter containing timeScale value
+                     , recScale     :: String -- ^ Name of the parameter containing a scale value for the recorded quantity
+                     , recColor     :: String -- ^ Name of the parameter specifying the color (for plots)
+                     } deriving (Show)
+
+-- | Definition of a data writer.
+data DataWriter = DataWriter { dwPath     :: String -- ^ Name of the parameter containing path of the file to be written to
+                             , dwFilename :: String -- ^ Name of the parameter containing name of the file to be written to
+                             } deriving (Show)
+                 
+-- | Definition of a data display.
+data DataDisplay = DataDisplay { ddTitle      :: String -- ^ Name of the parameter containing title of the plot
+                               , ddDataRegion :: String -- ^ Name of the parameter containing x,y-extents of the plot
+                             } deriving (Show)
+                 
+-- | Definition of a simulation run spec.
+data Run = Run { runComponent :: String -- ^ Name of the parameter containing title of the plot
+               , runVariable  :: String -- ^ Name of the parameter specifying name of the time variable
+               , runIncrement :: String -- ^ Name of the parameter specifying time increment
+               , runTotal     :: String -- ^ Name of the parameter specifying total time of the simulation
+               } deriving (Show)
+
+-- | Definition of a simulation spec container.
+data Simulation = Simulation { simRecorders    :: [Record]      -- ^ Quantities to be recorded
+                             , simDataWriters  :: [DataWriter]  -- ^ File data writers
+                             , simDataDisplays :: [DataDisplay] -- ^ Data plotters
+                             , simRun          :: [Run]         -- ^ Run specs
+                             } deriving (Show)
                  
 -- | Definition of a component type.
 data ComponentType = ComponentType { compTypeName              :: String               -- ^ Name of the component type
@@ -260,6 +291,7 @@ data ComponentType = ComponentType { compTypeName              :: String        
                                    , compTypePaths             :: [Path]               -- ^ Path definitions
                                    , compTypeDynamics          :: Maybe Dynamics       -- ^ Dynamics
                                    , compTypeStructure         :: Maybe Structure      -- ^ Structure
+                                   , compTypeSimulation        :: Maybe Simulation     -- ^ Simulation specs
                                    } deriving (Show)
 
 -- | Definition of a container.
