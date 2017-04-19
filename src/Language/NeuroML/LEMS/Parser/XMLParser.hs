@@ -21,6 +21,8 @@ import Text.XML.HXT.Parser.XmlParsec (xread)
 import Text.XML.HXT.Arrow.XmlState
 import Data.Tree.NTree.TypeDefs
 
+import Data.Maybe
+
 lemsTags = ["Lems",
             "Dimension", "Unit", "Assertion",
             "Include", "Constant",
@@ -156,11 +158,29 @@ parseDerivedParameter = atTag "DerivedParameter" >>>
     value     <- getAttrValue "value"     -< derivedParameter
     returnA -< DerivedParameter name dimension select value
     
+parseComponentReference = atTag "ComponentReference" >>>
+  proc componentReference -> do
+    name  <- getAttrValue "name" -< componentReference
+    ctype <- getAttrValue "type" -< componentReference
+    returnA -< ComponentReference name ctype
+    
+parseLink = atTag "Link" >>>
+  proc link -> do
+    name <- getAttrValue "name" -< link
+    ctype <- getAttrValue "type" -< link
+    returnA -< Link name ctype
+    
 parseExposure = atTag "Exposure" >>>
   proc exposure -> do
     name      <- getAttrValue "name"      -< exposure
     dimension <- getAttrValue "dimension" -< exposure
     returnA -< Exposure name dimension
+
+parseRequirement = atTag "Requirement" >>>
+  proc requirement -> do
+    name      <- getAttrValue "name"      -< requirement
+    dimension <- getAttrValue "dimension" -< requirement
+    returnA -< Requirement name dimension
 
 parseChild = atTag "Child" >>>
   proc child -> do
@@ -278,7 +298,7 @@ parseKineticScheme = atTag "KineticScheme" >>>
     forwardRate <- getAttrValue "forwardRate"   -< ks
     reverseRate <- getAttrValue "reverseRate"   -< ks
     returnA -< KineticScheme name nodes stateVar edges edgeSource edgeTarget forwardRate reverseRate
-    
+
 parseDynamics = atTag "Dynamics" >>>
   proc dynamics -> do
     stateVariables   <- childListA parseStateVariable   -< dynamics
@@ -289,22 +309,71 @@ parseDynamics = atTag "Dynamics" >>>
     regimes          <- childListA parseRegime          -< dynamics
     kineticSchemes   <- childListA parseKineticScheme   -< dynamics
     returnA -< Just $ Dynamics stateVariables timeDerivatives derivedVariables eventHandlers regimes kineticSchemes
+
+parseChildInstance = atTag "ChildInstance" >>>
+  proc childInstance -> do
+    component <- getAttrValue "component" -< childInstance
+    returnA -< ChildInstance component
     
+parseMultiInstantiate = atTag "MultiInstantiate" >>>
+  proc multiInstantiate -> do
+    component <- getAttrValue "component" -< multiInstantiate
+    number    <- getAttrValue "number" -< multiInstantiate
+    returnA -< MultiInstantiate component number
+    
+parseEventConnection = atTag "EventConnection" >>>
+  proc eventConnection -> do
+    from              <- getAttrValue "from"              -< eventConnection
+    to                <- getAttrValue "to"                -< eventConnection
+    sourcePort        <- getAttrValue "sourcePort"        -< eventConnection
+    targetPort        <- getAttrValue "targetPort"        -< eventConnection
+    receiver          <- getAttrValue "receiver"          -< eventConnection
+    receiverContainer <- getAttrValue "receiverContainer" -< eventConnection
+    returnA -< EventConnection from to sourcePort targetPort receiver receiverContainer
+
+parseWith = atTag "With" >>>
+  proc with -> do
+    instance_ <- getAttrValue "instance" -< with
+    as        <- getAttrValue "as"       -< with
+    returnA -< With instance_ as
+
+parseForEach = atTag "ForEach" >>>
+  proc forEach -> do
+    instances        <- getAttrValue "instances"        -< forEach
+    as               <- getAttrValue "as"               -< forEach
+    forEaches        <- childListA parseForEach         -< forEach
+    eventConnections <- childListA parseEventConnection -< forEach
+    returnA -< ForEach instances as forEaches eventConnections
+
+parseStructure = atTag "Structure" >>>
+  proc forEach -> do
+    childInstances   <- childListA parseChildInstance    -< forEach
+    multiInstances   <- childListA parseMultiInstantiate -< forEach
+    eventConnections <- childListA parseEventConnection  -< forEach
+    withs            <- childListA parseWith             -< forEach
+    forEaches        <- childListA parseForEach          -< forEach
+    returnA -< Just $ Structure childInstances multiInstances eventConnections withs forEaches
+
+
 parseComponentType = atTag "ComponentType" >>>
   proc compType -> do
-    name            <- getAttrValue "name"               -< compType
-    extends         <- getAttrValue "extends"            -< compType
-    parameters      <- childListA parseParameter              -< compType
-    fixedParameters <- childListA parseFixed                  -< compType
-    derivedParameters <- childListA parseDerivedParameter     -< compType
-    exposures       <- childListA parseExposure               -< compType
-    childDefs       <- childListA parseChild                  -< compType
-    childrenDefs    <- childListA parseChildren               -< compType
-    eventPorts      <- childListA parseEventPort              -< compType
-    texts           <- childListA parseText                   -< compType
-    paths           <- childListA parsePath                   -< compType
-    dynamics        <- withDefault (childA parseDynamics) Nothing -< compType
-    returnA -< ComponentType name extends parameters fixedParameters derivedParameters exposures childDefs childrenDefs eventPorts texts paths dynamics
+    name              <- getAttrValue "name"                         -< compType
+    extends           <- getAttrValue "extends"                      -< compType
+    parameters        <- childListA parseParameter                   -< compType
+    fixedParameters   <- childListA parseFixed                       -< compType
+    derivedParameters <- childListA parseDerivedParameter            -< compType
+    compRefs          <- childListA parseComponentReference          -< compType
+    links             <- childListA parseLink                        -< compType
+    exposures         <- childListA parseExposure                    -< compType
+    requirements      <- childListA parseRequirement                 -< compType
+    childDefs         <- childListA parseChild                       -< compType
+    childrenDefs      <- childListA parseChildren                    -< compType
+    eventPorts        <- childListA parseEventPort                   -< compType
+    texts             <- childListA parseText                        -< compType
+    paths             <- childListA parsePath                        -< compType
+    dynamics          <- withDefault (childA parseDynamics) Nothing  -< compType
+    structure         <- withDefault (childA parseStructure) Nothing -< compType
+    returnA -< ComponentType name extends parameters fixedParameters derivedParameters compRefs links exposures requirements childDefs childrenDefs eventPorts texts paths dynamics structure
 
 parseComponentExplicit = atTag "Component" >>>
   proc comp -> do
@@ -351,20 +420,19 @@ parseXML xmlText = readString [ withValidate no
                               ] xmlText
 
 
-
 test file = do
   contents <- readFile file
   models <- runX (parseXML contents >>> parseLems)
   let model = head models
-      ctype = head $ filter (\ctype -> compTypeName ctype == "KSGate") $ lemsCompTypes model
-      comp  = head $ filter (\ctype -> compTypeName ctype == "") $ lemsCompTypes model
+      ctype = listToMaybe $ filter (\ctype -> compTypeName ctype == "Population") $ lemsCompTypes model
+      comp  = listToMaybe $ filter (\ctype -> compTypeName ctype == "") $ lemsCompTypes model
   putStrLn $ show $ (head models)
   putStrLn ""
   putStrLn ""
   putStrLn ""
   putStrLn $ show $ ctype
   putStrLn ""
-  putStrLn $ show $ compTypeDynamics ctype
+  putStrLn $ show $ fmap compTypeStructure $  ctype
   putStrLn ""
   putStrLn ""
   putStrLn ""

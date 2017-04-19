@@ -68,17 +68,32 @@ data Fixed = Fixed { fixedName  :: String -- ^ Fixed parameter name
                    , fixedValue :: String -- ^ Fixed parameter value
                    } deriving (Show)
 
--- | Definition of a derived parameter
+-- | Definition of a derived parameter.
 data DerivedParameter = DerivedParameter { dpName      :: String -- ^ Parameter name
                                          , dpDimension :: String -- ^ Dimension of the parameter
                                          , dpSelect    :: String -- ^ Target selection path
                                          , dpValue     :: String -- ^ Valu expression
                                          } deriving (Show)
 
+-- | Definition of a component reference
+data ComponentReference = ComponentReference { crefName :: String -- ^ Component reference parameter name.
+                                             , crefType :: String -- ^ Type of the component being referenced.
+                                         } deriving (Show)
+
+-- | Definition of a link entry.
+data Link = Link { lnkName :: String -- ^ Name of the link
+                 , lnkType :: String -- ^ Type of the linked component
+                 } deriving (Show)
+
 -- | Specification of an exposed parameter (parameter visible from outside the component).
 data Exposure = Exposure { expName      :: String -- ^ Exposure name
                          , expDimension :: String -- ^ Exposure dimension
                          } deriving (Show)
+
+-- | Specification of a required parameter (parameter defined in sub-component types).
+data Requirement = Requirement { reqName      :: String -- ^ Requirement name
+                               , reqDimension :: String -- ^ Requirement dimension
+                               } deriving (Show)
 
 -- | Definition of an event port.
 data EventPort = EventPort { epName      :: String -- ^ Event port name
@@ -190,19 +205,61 @@ data Dynamics = Dynamics { dynStateVariables   :: [StateVariable]   -- ^ State v
                          , dynKineticSchemes   :: [KineticScheme]   -- ^ Kinetic schemes
                          } deriving (Show)
 
+-- | Definition of a single child instance spec.
+data ChildInstance = ChildInstance { ciComponent :: String -- ^ Name of parameter to be used as component reference
+                                   } deriving (Show)
+
+-- | Definition of a multiple child instances spec.
+data MultiInstantiate = MultiInstantiate { miComponent :: String -- ^ Name of parameter to be used as component reference
+                                         , miNumber    :: String -- ^ Number of instances
+                                         } deriving (Show)
+
+-- | Definition of an event connection.
+data EventConnection = EventConnection { evcFrom :: String              -- ^ Variable containing link to source component
+                                       , evcTo   :: String              -- ^ Variable containing link to target component
+                                       , evcSourcePort :: String        -- ^ Source port
+                                       , evcTargetPort :: String        -- ^ Target port
+                                       , evcReceiver :: String          -- ^ Event receiver component (Overrides "to")
+                                       , evcReceiverContainer :: String -- ^ Event receiver container
+                                       } deriving (Show)
+
+-- | Definition of a component reference variable assigned a single component.
+data With = With { wthInstance :: String -- ^ Name of link parameter or path to instance
+                 , wthAs       :: String -- ^ Variable name
+                 } deriving (Show)
+            
+-- | Definition of a component reference variable iterating over a list of components.
+data ForEach = ForEach { feInstances        :: String             -- ^ Name of link parameter or path to instance collection
+                       , feAs               :: String             -- ^ Variable name
+                       , feForEach          :: [ForEach]          -- ^ Nested for each statements
+                       , feEventConnections :: [EventConnection]  -- ^ Event connections
+                       } deriving (Show)
+            
+-- | Definition of a structural container.
+data Structure = Structure { strChildInstances   :: [ChildInstance]    -- ^ Single component instantiations
+                           , strMultiInstances   :: [MultiInstantiate] -- ^ Multiple component instantiations
+                           , strEventConnection  :: [EventConnection]  -- ^ Event connections
+                           , strWith             :: [With]             -- ^ Variable assignments
+                           , strForEach          :: [ForEach]          -- ^ Variable iterations
+                           } deriving (Show)
+                 
 -- | Definition of a component type.
-data ComponentType = ComponentType { compTypeName            :: String      -- ^ Name of the component type
-                                   , compTypeExtends         :: String      -- ^ Name of the base component type
-                                   , compTypeParameters      :: [Parameter] -- ^ Component type parameters
-                                   , compTypeFixedParameters :: [Fixed]     -- ^ Fixed parameters
-                                   , compTypeDerivedParameters :: [DerivedParameter] -- ^ Derived parameters
-                                   , compTypeExposures       :: [Exposure]  -- ^ Exposures
-                                   , compTypeChildDefs       :: [Child]     -- ^ Child definitions
-                                   , compTypeChildrenDefs    :: [Children]  -- ^ Children definitions
-                                   , compTypeEventPorts      :: [EventPort] -- ^ Event ports
-                                   , compTypeTexts           :: [Text]      -- ^ Text definitions
-                                   , compTypePaths           :: [Path]      -- ^ Path definitions
-                                   , compTypeDynamics        :: Maybe Dynamics -- ^ Dynamics
+data ComponentType = ComponentType { compTypeName              :: String               -- ^ Name of the component type
+                                   , compTypeExtends           :: String               -- ^ Name of the base component type
+                                   , compTypeParameters        :: [Parameter]          -- ^ Component type parameters
+                                   , compTypeFixedParameters   :: [Fixed]              -- ^ Fixed parameters
+                                   , compTypeDerivedParameters :: [DerivedParameter]   -- ^ Derived parameters
+                                   , compTypeCompRefs          :: [ComponentReference] -- ^ Component references
+                                   , compTypeLinks             :: [Link]               -- ^ Link definitions
+                                   , compTypeExposures         :: [Exposure]           -- ^ Exposures
+                                   , compTypeRequirements      :: [Requirement]        -- ^ Requirements
+                                   , compTypeChildDefs         :: [Child]              -- ^ Child definitions
+                                   , compTypeChildrenDefs      :: [Children]           -- ^ Children definitions
+                                   , compTypeEventPorts        :: [EventPort]          -- ^ Event ports
+                                   , compTypeTexts             :: [Text]               -- ^ Text definitions
+                                   , compTypePaths             :: [Path]               -- ^ Path definitions
+                                   , compTypeDynamics          :: Maybe Dynamics       -- ^ Dynamics
+                                   , compTypeStructure         :: Maybe Structure      -- ^ Structure
                                    } deriving (Show)
 
 -- | Definition of a container.
