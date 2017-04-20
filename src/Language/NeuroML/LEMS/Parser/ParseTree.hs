@@ -1,6 +1,6 @@
 {-|
-Module      : Language.NeuroML.LEMS.Parser.AST
-Description : Parsed LEMS AST
+Module      : Language.NeuroML.LEMS.Parser.ParseTree
+Description : LEMS parse tree
 Copyright   : (c) Gautham Ganapathy, 2017
 License     : BSD
 Maintainer  : gautham@lisphacker.org
@@ -9,7 +9,7 @@ Portability : POSIX
 
 LEMS model after being parsed from XML.
 -}
-module Language.NeuroML.LEMS.Parser.AST where
+module Language.NeuroML.LEMS.Parser.ParseTree where
 
 import Data.Map.Strict
 

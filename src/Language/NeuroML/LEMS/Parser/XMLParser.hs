@@ -13,7 +13,7 @@ LEMS model after being parsed from XML.
 module Language.NeuroML.LEMS.Parser.XMLParser where
 
 import Text.XML.HXT.Core hiding (xread)
-import Language.NeuroML.LEMS.Parser.AST
+import Language.NeuroML.LEMS.Parser.ParseTree
 
 import qualified Data.Map.Strict as M
 
@@ -22,6 +22,7 @@ import Text.XML.HXT.Arrow.XmlState
 import Data.Tree.NTree.TypeDefs
 
 import Data.Maybe
+import Data.Functor
 
 lemsTopLevelTags = ["Dimension", "Unit", "Assertion",
                     "Include", "Constant",
@@ -461,18 +462,23 @@ parseXML xmlText = readString [ withValidate no
                               , withRemoveWS yes  -- throw away formating WS
                               ] xmlText
 
+parseLemsXML xmlText = do
+  parseTrees <- runX (parseXML xmlText >>> parseLems)
+  let parseTree = listToMaybe parseTrees
+  return parseTree
+
+-----------------------------------------------------------------------------------------------------------
 
 test file = do
   contents <- readFile file
-  models <- runX (parseXML contents >>> parseLems)
-  let model = head models
-      ctype = listToMaybe $ filter (\ctype -> compTypeName ctype == "OutputColumn") $ lemsCompTypes model
-      comp  = listToMaybe $ filter (\c -> compId c == "na1") $ lemsComponents model
-  putStrLn $ show $ (head models)
+  model <- parseLemsXML contents
+  let ctype = fromMaybe Nothing $ listToMaybe <$> filter (\ct -> compTypeName ct == "KSState") <$> lemsCompTypes <$> model
+  let comp = fromMaybe Nothing $ listToMaybe <$> filter (\c -> compId c == "na1") <$> lemsComponents <$> model
+  putStrLn $ show model
   putStrLn ""
   putStrLn ""
   putStrLn ""
-  putStrLn $ show $ ctype
+  putStrLn $ show ctype
   putStrLn ""
   putStrLn $ show $ fmap compTypeSimulation $  ctype
   putStrLn ""
@@ -482,7 +488,7 @@ test file = do
   putStrLn ""
   putStrLn ""
   putStrLn ""
-  putStrLn $ show $ map compId (lemsComponents (head models))
+  putStrLn $ show $ map compId <$> lemsComponents <$> model
 
 testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFile
 
