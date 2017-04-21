@@ -21,8 +21,12 @@ import Text.XML.HXT.Parser.XmlParsec (xread)
 import Text.XML.HXT.Arrow.XmlState
 import Data.Tree.NTree.TypeDefs
 
+import Control.Monad as Monad
+
 import Data.Maybe
 import Data.Functor
+
+import System.Directory
 
 lemsTopLevelTags = ["Dimension", "Unit", "Assertion",
                     "Include", "Constant",
@@ -462,16 +466,58 @@ parseXML xmlText = readString [ withValidate no
                               , withRemoveWS yes  -- throw away formating WS
                               ] xmlText
 
+emptyModel = Lems [] [] [] [] [] [] [] Nothing
+
+concatModels []     = emptyModel
+concatModels (m:ms) = let msc = concatModels ms
+                          d1 = lemsDimensions m
+                          u1 = lemsUnits m
+                          a1 = lemsAssertions m
+                          cns1 = lemsConstants m
+                          ct1 = lemsCompTypes m
+                          cmp1 = lemsComponents m
+                          t1 = lemsTarget m
+                          d2 = lemsDimensions msc
+                          u2 = lemsUnits msc
+                          a2 = lemsAssertions msc
+                          cns2 = lemsConstants msc
+                          ct2 = lemsCompTypes msc
+                          cmp2 = lemsComponents msc
+                          t2 = lemsTarget msc
+                          tnew = if isNothing t1 then t2 else t1
+                      in Lems [] (d1 ++ d2) (u1 ++ u2) (a1 ++ a2) (cns1 ++ cns2) (ct1 ++ ct2) (cmp1 ++ cmp2) tnew
+
+
 parseLemsXML xmlText = do
   parseTrees <- runX (parseXML xmlText >>> parseLems)
   let parseTree = listToMaybe parseTrees
   return parseTree
 
+findAndParseLemsXMLIncludeFile :: [String] -> String -> IO (Maybe Lems)
+findAndParseLemsXMLIncludeFile includeDirs xmlFile = do
+  path <- findFile includeDirs xmlFile
+  model <- parseLemsXMLFile includeDirs $ fromJust path
+  return model
+  
+
+
+parseLemsXMLFile :: [String] -> String -> IO (Maybe Lems)
+parseLemsXMLFile includeDirs xmlFile = do
+  contents <- readFile xmlFile
+  maybeModel <- parseLemsXML contents
+  Monad.when (isNothing maybeModel) $ error "Unable to parse XML file"
+  let model = fromJust maybeModel
+      includedFiles = map includeFile $ lemsIncludes $ model
+  includedModels <- mapM (findAndParseLemsXMLIncludeFile includeDirs) includedFiles
+  return $ Just $ concatModels $ model:(catMaybes includedModels)
+
+  
 -----------------------------------------------------------------------------------------------------------
 
 test file = do
-  contents <- readFile file
-  model <- parseLemsXML contents
+  --contents <- readFile file
+  --model <- parseLemsXML contents
+  model <- parseLemsXMLFile includeDirs file
   let ctype = fromMaybe Nothing $ listToMaybe <$> filter (\ct -> compTypeName ct == "KSState") <$> lemsCompTypes <$> model
   let comp = fromMaybe Nothing $ listToMaybe <$> filter (\c -> compId c == "na1") <$> lemsComponents <$> model
   putStrLn $ show model
@@ -498,3 +544,7 @@ test2 = do
     contents <- readFile "/home/gautham/work/NeuroML/LEMS/examples/example1.xml"
     putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
     putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
+
+ex4 = "/home/gautham/work/NeuroML/LEMS/examples/example4.xml"
+
+includeDirs = ["/home/gautham/work/NeuroML/LEMS/examples"]
