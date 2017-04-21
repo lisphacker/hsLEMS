@@ -1,2 +1,2 @@
 # hsLEMS
-LEMS model simulator in haskell
+NeuroML/LEMS compiler in Haskell
