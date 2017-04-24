@@ -38,9 +38,10 @@ import Data.Functor
 
 -----------------------------------------------------------------------------------------------------------
 
+includeDirs = ["/home/gautham/work/NeuroML/LEMS/examples"]
+
 test file = do
-  contents <- readFile file
-  pt <- P.parseLemsXML contents
+  pt <- P.parseLemsXMLFile includeDirs file
   putStrLn $ show pt
   
 
