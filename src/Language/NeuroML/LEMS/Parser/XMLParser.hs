@@ -10,7 +10,10 @@ Portability : POSIX
 
 LEMS model after being parsed from XML.
 -}
-module Language.NeuroML.LEMS.Parser.XMLParser where
+module Language.NeuroML.LEMS.Parser.XMLParser
+  ( parseLemsXML
+  , parseLemsXMLFile
+  )where
 
 import Text.XML.HXT.Core hiding (xread)
 import Language.NeuroML.LEMS.Parser.ParseTree
@@ -487,7 +490,9 @@ concatModels (m:ms) = let msc = concatModels ms
                           tnew = if isNothing t1 then t2 else t1
                       in Lems [] (d1 ++ d2) (u1 ++ u2) (a1 ++ a2) (cns1 ++ cns2) (ct1 ++ ct2) (cmp1 ++ cmp2) tnew
 
-
+-- | Parses a string containing an LEMS formatted XML into a parse tree. Does not process include directives.
+parseLemsXML :: String           -- ^ XML text
+             -> IO (Maybe Lems)
 parseLemsXML xmlText = do
   parseTrees <- runX (parseXML xmlText >>> parseLems)
   let parseTree = listToMaybe parseTrees
@@ -498,10 +503,11 @@ findAndParseLemsXMLIncludeFile includeDirs xmlFile = do
   path <- findFile includeDirs xmlFile
   model <- parseLemsXMLFile includeDirs $ fromJust path
   return model
-  
 
-
-parseLemsXMLFile :: [String] -> String -> IO (Maybe Lems)
+-- | Takes a list of directories to search for included files and XML file name, parses the file and any included files, and returns a parse tree.
+parseLemsXMLFile :: [String]        -- ^ List of directories to search for included files
+                 -> String          -- ^ Path to the file to be parsed
+                 -> IO (Maybe Lems)
 parseLemsXMLFile includeDirs xmlFile = do
   contents <- readFile xmlFile
   maybeModel <- parseLemsXML contents

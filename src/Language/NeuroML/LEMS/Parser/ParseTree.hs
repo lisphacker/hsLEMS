@@ -9,7 +9,48 @@ Portability : POSIX
 
 LEMS model after being parsed from XML.
 -}
-module Language.NeuroML.LEMS.Parser.ParseTree where
+module Language.NeuroML.LEMS.Parser.ParseTree
+  ( Dimension(..)
+  , Unit(..)
+  , Target(..)
+  , Constant(..)
+  , Include(..)
+  , Assertion(..)
+  , Parameter(..)
+  , Fixed(..)
+  , DerivedParameter(..)
+  , ComponentReference(..)
+  , Link(..)
+  , Exposure(..)
+  , Requirement(..)
+  , EventPort(..)
+  , Text(..)
+  , Path(..)
+  , Child(..)
+  , Children(..)
+  , StateVariable(..)
+  , DerivedVariable(..)
+  , TimeDerivative(..)
+  , Action (StateAssignment, EventOut, Transition)
+  , EventHandler (OnStart, OnCondition, OnEvent, OnEntry)
+  , Regime(..)
+  , KineticScheme(..)
+  , Dynamics(..)
+  , ChildInstance(..)
+  , MultiInstantiate(..)
+  , EventConnection(..)
+  , With(..)
+  , ForEach(..)
+  , Structure(..)
+  , Record(..)
+  , DataWriter(..)
+  , DataDisplay(..)
+  , Run(..)
+  , Simulation(..)
+  , ComponentType(..)
+  , Component(..)
+  , Lems(..)
+  ) where
 
 import Data.Map.Strict
 
@@ -139,39 +180,32 @@ data TimeDerivative = TimeDerivative { tdVariable :: String -- ^ Variable name
                                      , tdValue    :: String -- ^ EXpression for the time derivative
                                      } deriving (Show)
 
-
+-- | Definition of an action performed in reponse to an event.
 data Action = StateAssignment { saVariable :: String -- ^ State variable to be assigned to
                               , saValue    :: String -- ^ Value/expression being assigned
-                              }
-            | EventOut { eoPort :: String } -- ^ Activate the specified output event port
-            | Transition { trRegime :: String } -- ^ Regime to transition to
+                              } -- ^ Assign a new value to a state variable
+              
+              -- | Output an event on the specified event port
+            | EventOut { eoPort :: String  -- ^ Activate the specified output event port
+                       }
+              -- | Switch to a new dynamics regime
+            | Transition { trRegime :: String -- ^ Regime to transition to
+                         }
             deriving (Show)
 
-{-
--- | Definition of a startup handler.
-data OnStart = OnStart { osActions :: [Action] -- ^ List of action to perform on startup
-                       } deriving (Show)
-
--- | Definition of a condition handler.
-data OnCondition = OnCondition { ocTest :: String      -- ^ The port for which this handler responds to
-                               , ocActions :: [Action] -- ^ List of action to perform in response to event
-                               } deriving (Show)
-
--- | Definition of an event port handler.
-data OnEvent = OnEvent { oePort    :: String   -- ^ The port for which this handler responds to
-                       , oeActions :: [Action] -- ^ List of action to perform in response to event
-                       } deriving (Show)
--}
-
--- | Definition of an event handler (startup/condition/port)
+-- | Definition of an event handler (startup / condition / event / regime entry)
 data EventHandler = OnStart { osActions :: [Action] -- ^ List of action to perform on startup
-                            }
+                            } -- ^ Event handler executed on component startup
+                    
+                    -- | Event handler executed on condition becoming true
                   | OnCondition { ocTest :: String      -- ^ The port for which this handler responds to
                                 , ocActions :: [Action] -- ^ List of action to perform in response to event
                                 }
+                    -- | Event handler executed on receiving an specific event
                   | OnEvent { oevPort    :: String   -- ^ The port for which this handler responds to
                             , oevActions :: [Action] -- ^ List of action to perform in response to event
                             }
+                    -- | Event handler executed on entering a dynamics regime
                   | OnEntry { oenActions :: [Action] -- ^ List of action to perform in response to event
                             }
                   deriving (Show)
