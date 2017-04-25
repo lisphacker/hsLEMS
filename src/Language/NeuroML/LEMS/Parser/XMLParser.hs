@@ -13,7 +13,7 @@ LEMS model after being parsed from XML.
 module Language.NeuroML.LEMS.Parser.XMLParser
   ( parseLemsXML
   , parseLemsXMLFile
-  )where
+  ) where
 
 import Text.XML.HXT.Core hiding (xread)
 import Language.NeuroML.LEMS.Parser.ParseTree

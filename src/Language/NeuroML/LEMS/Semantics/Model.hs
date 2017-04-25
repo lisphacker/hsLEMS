@@ -11,7 +11,7 @@ LEMS model after being parsed from XML.
 -}
 module Language.NeuroML.LEMS.Semantics.Model where
 
-import Data.Map.Strict
+import Data.Map.Strict as M
 
 -- | Definition of a dimension as a combinations of base SI units.
 data Dimension = Dimension { dimName        :: String  -- ^ Name of the dimension
@@ -23,13 +23,22 @@ data Dimension = Dimension { dimName        :: String  -- ^ Name of the dimensio
                            , dimQuantity    :: Int     -- ^ Quantity (mole, mol)
                            , dimLumInt      :: Int     -- ^ Luminous intensity (candela, cd)
                            } deriving (Show)
+type DimensionMap = M.Map String Dimension             -- ^ Map of names to dimensions
 
 -- | Definition of a unit symbol as a scaled dimension.
-data Unit = Unit { unitName      :: String     -- ^ Name of the unit
-                 , unitSymbol    :: String     -- ^ Unit symbol
-                 , unitDimension :: Dimension  -- ^ Name of the dimension being scaled
-                 , unitPower10   :: Int        -- ^ Power of 10 scale value
-                 , unitScale     :: Double     -- ^ Non-power of 10 scale value
-                 , unitOffset    :: Double     -- ^ Non-zero offset
+data Unit = Unit { unitName      :: String    -- ^ Name of the unit
+                 , unitSymbol    :: String    -- ^ Unit symbol
+                 , unitDimension :: Dimension -- ^ Name of the dimension being scaled
+                 , unitPower10   :: Int       -- ^ Power of 10 scale value
+                 , unitScale     :: Double    -- ^ Non-power of 10 scale value
+                 , unitOffset    :: Double    -- ^ Non-zero offset
+                 } deriving (Show)
+type UnitMap = M.Map String Dimension         -- ^ Map of symbols to units
+
+
+
+-- | Lems model
+data Lems = Lems { lemsDimensions :: DimensionMap
+                 , lemsUnits      :: UnitMap
                  } deriving (Show)
 
