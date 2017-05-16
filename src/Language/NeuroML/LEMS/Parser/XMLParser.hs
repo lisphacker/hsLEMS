@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Arrows, NoMonomorphismRestriction #-}
 {-|
 Module      : Language.NeuroML.LEMS.Parser.XMLParser
@@ -11,9 +13,9 @@ Portability : POSIX
 LEMS model after being parsed from XML.
 -}
 module Language.NeuroML.LEMS.Parser.XMLParser
-  ( parseLemsXML
+  {-( parseLemsXML
   , parseLemsXMLFile
-  ) where
+  )-} where
 
 import Text.XML.HXT.Core hiding (xread)
 import Language.NeuroML.LEMS.Parser.ParseTree
@@ -30,6 +32,8 @@ import Data.Maybe
 import Data.Functor
 
 import System.Directory
+
+import Data.Text (pack, unpack, Text)
 
 lemsTopLevelTags = ["Dimension", "Unit", "Assertion",
                     "Include", "Constant",
@@ -89,17 +93,18 @@ childListA parseFn = listA (getChildren >>> parseFn)
 childA parseFn = getChildren >>> parseFn
 
 
-getAttrMap skipNames trees = getAttrMap2 M.empty trees
-  where getAttrMap2 map []     = map
-        getAttrMap2 map (t:ts) = let (name, value) = (getAttr t)
+getAttrMap :: [Text] -> [NTree XNode] -> M.Map Text Text
+getAttrMap skipNames trees = getAttrMap' M.empty trees
+  where getAttrMap' map []     = map
+        getAttrMap' map (t:ts) = let (name, value) = (getAttr t)
                                  in if name `elem` skipNames
                                     then
-                                      getAttrMap2 map ts
+                                      getAttrMap' map ts
                                     else
-                                      getAttrMap2 (M.insert name value map) ts
+                                      getAttrMap' (M.insert name value map) ts
           where getAttr (NTree (XAttr name) children) = (cleanString name, getAttrValue (head children))
                 getAttrValue (NTree (XText value) _) = cleanString value
-                cleanString name = filter (\c -> c /= '"') $ show name
+                cleanString name = pack $ filter (\c -> c /= '"') $ show name
           
 parseDimension = atTag "Dimension" >>>
   proc dim -> do
@@ -111,7 +116,7 @@ parseDimension = atTag "Dimension" >>>
     k    <- getAttrValue "k"    -< dim
     n    <- getAttrValue "n"    -< dim
     j    <- getAttrValue "j"    -< dim
-    returnA -< (Dimension name
+    returnA -< (Dimension (pack name)
                 (strToInt 0 m)
                 (strToInt 0 l)
                 (strToInt 0 t)
@@ -123,143 +128,143 @@ parseDimension = atTag "Dimension" >>>
 
 parseUnit = atTag "Unit" >>>
   proc unit -> do
-    name      <- getAttrValue "name"      -< unit
-    symbol    <- getAttrValue "symbol"    -< unit
-    dimension <- getAttrValue "dimension" -< unit
-    power     <- getAttrValue "power"     -< unit
-    scale     <- getAttrValue "scale"     -< unit
-    offset    <- getAttrValue "offset"    -< unit
+    name      <- pack <$> getAttrValue "name"      -< unit
+    symbol    <- pack <$> getAttrValue "symbol"    -< unit
+    dimension <- pack <$> getAttrValue "dimension" -< unit
+    power     <- getAttrValue "power"              -< unit
+    scale     <- getAttrValue "scale"              -< unit
+    offset    <- getAttrValue "offset"             -< unit
     returnA -< Unit name symbol dimension (strToInt 0 power) (strToDouble 0.0 scale) (strToDouble 0.0 offset)
        
 parseAssertion = atTag "Assertion" >>>
   proc assertion -> do
-    dimension <- getAttrValue "dimension" -< assertion
-    matches   <- getAttrValue "matches"   -< assertion
+    dimension <- pack <$> getAttrValue "dimension" -< assertion
+    matches   <- pack <$> getAttrValue "matches"   -< assertion
     returnA -< Assertion dimension matches
        
 parseConstant = atTag "Constant" >>>
   proc constant -> do
-    name      <- getAttrValue "name"      -< constant
-    matches   <- getAttrValue "matches"   -< constant
-    value     <- getAttrValue "value"     -< constant
-    dimension <- getAttrValue "dimension" -< constant
+    name      <- pack <$> getAttrValue "name"      -< constant
+    matches   <- pack <$> getAttrValue "matches"   -< constant
+    value     <- pack <$> getAttrValue "value"     -< constant
+    dimension <- pack <$> getAttrValue "dimension" -< constant
     returnA -< Constant name matches value dimension
 
 parseInclude = atTag "Include" >>>
   proc include -> do
-    file <- getAttrValue "file" -< include
+    file <- pack <$> getAttrValue "file" -< include
     returnA -< Include file
 
 parseParameter = atTag "Parameter" >>>
   proc parameter -> do
-    name      <- getAttrValue "name"      -< parameter
-    dimension <- getAttrValue "dimension" -< parameter
+    name      <- pack <$> getAttrValue "name"      -< parameter
+    dimension <- pack <$> getAttrValue "dimension" -< parameter
     returnA -< Parameter name dimension
     
 parseFixed = atTag "Fixed" >>>
   proc fixed -> do
-    name   <- getAttrValue "name"      -< fixed
-    value  <- getAttrValue "value" -< fixed
+    name   <- pack <$> getAttrValue "name"      -< fixed
+    value  <- pack <$> getAttrValue "value" -< fixed
     returnA -< Fixed name value
     
 parseDerivedParameter = atTag "DerivedParameter" >>>
   proc derivedParameter -> do
-    name      <- getAttrValue "name"      -< derivedParameter
-    dimension <- getAttrValue "dimension" -< derivedParameter
-    select    <- getAttrValue "select"    -< derivedParameter
-    value     <- getAttrValue "value"     -< derivedParameter
+    name      <- pack <$> getAttrValue "name"      -< derivedParameter
+    dimension <- pack <$> getAttrValue "dimension" -< derivedParameter
+    select    <- pack <$> getAttrValue "select"    -< derivedParameter
+    value     <- pack <$> getAttrValue "value"     -< derivedParameter
     returnA -< DerivedParameter name dimension select value
     
 parseComponentReference = atTag "ComponentReference" >>>
   proc componentReference -> do
-    name  <- getAttrValue "name" -< componentReference
-    ctype <- getAttrValue "type" -< componentReference
+    name  <- pack <$> getAttrValue "name" -< componentReference
+    ctype <- pack <$> getAttrValue "type" -< componentReference
     returnA -< ComponentReference name ctype
     
 parseLink = atTag "Link" >>>
   proc link -> do
-    name <- getAttrValue "name" -< link
-    ctype <- getAttrValue "type" -< link
+    name  <- pack <$> getAttrValue "name" -< link
+    ctype <- pack <$> getAttrValue "type" -< link
     returnA -< Link name ctype
     
 parseExposure = atTag "Exposure" >>>
   proc exposure -> do
-    name      <- getAttrValue "name"      -< exposure
-    dimension <- getAttrValue "dimension" -< exposure
+    name      <- pack <$> getAttrValue "name"      -< exposure
+    dimension <- pack <$> getAttrValue "dimension" -< exposure
     returnA -< Exposure name dimension
 
 parseRequirement = atTag "Requirement" >>>
   proc requirement -> do
-    name      <- getAttrValue "name"      -< requirement
-    dimension <- getAttrValue "dimension" -< requirement
+    name      <- pack <$> getAttrValue "name"      -< requirement
+    dimension <- pack <$> getAttrValue "dimension" -< requirement
     returnA -< Requirement name dimension
 
 parseChild = atTag "Child" >>>
   proc child -> do
-    name  <- getAttrValue "name" -< child
-    ctype <- getAttrValue "type" -< child
+    name  <- pack <$> getAttrValue "name" -< child
+    ctype <- pack <$> getAttrValue "type" -< child
     returnA -< Child name ctype
 
 parseChildren = atTag "Children" >>>
   proc children -> do
-    name  <- getAttrValue "name" -< children
-    ctype <- getAttrValue "type" -< children
+    name  <- pack <$> getAttrValue "name" -< children
+    ctype <- pack <$> getAttrValue "type" -< children
     returnA -< Children name ctype
 
 parseEventPort = atTag "EventPort" >>>
   proc eventPort -> do
-    name      <- getAttrValue "name"      -< eventPort
-    dimension <- getAttrValue "dimension" -< eventPort
+    name      <- pack <$> getAttrValue "name"      -< eventPort
+    dimension <- pack <$> getAttrValue "dimension" -< eventPort
     returnA -< EventPort name dimension
 
 parseText = atTag "Text" >>>
   proc text -> do
-    name <- getAttrValue "name" -< text
-    returnA -< Text name
+    name <- pack <$> getAttrValue "name" -< text
+    returnA -< Txt name
     
 parsePath = atTag "Path" >>>
   proc path -> do
-    name <- getAttrValue "name" -< path
+    name <- pack <$> getAttrValue "name" -< path
     returnA -< Path name
     
 parseStateVariable = atTag "StateVariable" >>>
   proc stateVariable -> do
-    name      <- getAttrValue "name"      -< stateVariable
-    exposure  <- getAttrValue "exposure"  -< stateVariable
-    dimension <- getAttrValue "dimension" -< stateVariable
+    name      <- pack <$> getAttrValue "name"      -< stateVariable
+    exposure  <- pack <$> getAttrValue "exposure"  -< stateVariable
+    dimension <- pack <$> getAttrValue "dimension" -< stateVariable
     returnA -< StateVariable name exposure dimension
 
 parseDerivedVariable = atTag "DerivedVariable" >>>
   proc derivedVariable -> do
-    name      <- getAttrValue "name"      -< derivedVariable
-    exposure  <- getAttrValue "exposure"  -< derivedVariable
-    dimension <- getAttrValue "dimension" -< derivedVariable
-    value     <- getAttrValue "value"     -< derivedVariable
-    select    <- getAttrValue "select"    -< derivedVariable
-    reduce    <- getAttrValue "reduce"    -< derivedVariable
-    required  <- getAttrValue "required"  -< derivedVariable
+    name      <- pack <$> getAttrValue "name"      -< derivedVariable
+    exposure  <- pack <$> getAttrValue "exposure"  -< derivedVariable
+    dimension <- pack <$> getAttrValue "dimension" -< derivedVariable
+    value     <- pack <$> getAttrValue "value"     -< derivedVariable
+    select    <- pack <$> getAttrValue "select"    -< derivedVariable
+    reduce    <- pack <$> getAttrValue "reduce"    -< derivedVariable
+    required  <- pack <$> getAttrValue "required"  -< derivedVariable
     returnA -< DerivedVariable name exposure dimension value select reduce required
 
 parseTimeDerivative = atTag "TimeDerivative" >>>
   proc timeDerivative -> do
-    variable <- getAttrValue "variable" -< timeDerivative
-    value    <- getAttrValue "value"    -< timeDerivative
+    variable <- pack <$> getAttrValue "variable" -< timeDerivative
+    value    <- pack <$> getAttrValue "value"    -< timeDerivative
     returnA -< TimeDerivative variable value
 
 parseStateAssignment = atTag "StateAssignment" >>>
   proc stateAssignment -> do
-    variable <- getAttrValue "variable" -< stateAssignment
-    value    <- getAttrValue "value"    -< stateAssignment
+    variable <- pack <$> getAttrValue "variable" -< stateAssignment
+    value    <- pack <$> getAttrValue "value"    -< stateAssignment
     returnA -< StateAssignment variable value
 
 parseEventOut = atTag "EventOut" >>>
   proc eventOut -> do
-    port <- getAttrValue "port" -< eventOut
+    port <- pack <$> getAttrValue "port" -< eventOut
     returnA -< EventOut port
     
 parseTransition = atTag "Transition" >>>
   proc transition -> do
-    regime <- getAttrValue "regime" -< transition
+    regime <- pack <$> getAttrValue "regime" -< transition
     returnA -< Transition regime
     
 parseEventAction = parseStateAssignment `orElse` parseEventOut `orElse` parseTransition
@@ -276,22 +281,22 @@ parseOnEntry = atTag "OnEntry" >>>
 
 parseOnCondition = atTag "OnCondition" >>>
   proc onCondition -> do
-    test         <- getAttrValue "test"         -< onCondition
-    eventActions <- childListA parseEventAction -< onCondition
+    test         <- pack <$> getAttrValue "test" -< onCondition
+    eventActions <- childListA parseEventAction  -< onCondition
     returnA -< OnCondition test eventActions
 
 parseOnEvent = atTag "OnEvent" >>>
   proc onEvent -> do
-    port         <- getAttrValue "port"         -< onEvent
-    eventActions <- childListA parseEventAction -< onEvent
+    port         <- pack <$> getAttrValue "port" -< onEvent
+    eventActions <- childListA parseEventAction  -< onEvent
     returnA -< OnEvent port eventActions
 
 parseEventHandler = parseOnStart `orElse` parseOnCondition `orElse` parseOnEvent `orElse` parseOnEntry
 
 parseRegime = atTag "Regime" >>>
   proc regime -> do
-    name             <- getAttrValue "name"             -< regime
-    initial          <- getAttrValue "initial"          -< regime
+    name             <- pack <$> getAttrValue "name"    -< regime
+    initial          <- pack <$> getAttrValue "initial" -< regime
     stateVariables   <- childListA parseStateVariable   -< regime
     stateVariables   <- childListA parseStateVariable   -< regime
     timeDerivatives  <- childListA parseTimeDerivative  -< regime
@@ -301,14 +306,14 @@ parseRegime = atTag "Regime" >>>
 
 parseKineticScheme = atTag "KineticScheme" >>>
   proc ks -> do
-    name        <- getAttrValue "name"          -< ks
-    nodes       <- getAttrValue "nodes"         -< ks
-    stateVar    <- getAttrValue "stateVariable" -< ks
-    edges       <- getAttrValue "edges"         -< ks
-    edgeSource  <- getAttrValue "edgeSource"    -< ks
-    edgeTarget  <- getAttrValue "edgeTarget"    -< ks
-    forwardRate <- getAttrValue "forwardRate"   -< ks
-    reverseRate <- getAttrValue "reverseRate"   -< ks
+    name        <- pack <$> getAttrValue "name"          -< ks
+    nodes       <- pack <$> getAttrValue "nodes"         -< ks
+    stateVar    <- pack <$> getAttrValue "stateVariable" -< ks
+    edges       <- pack <$> getAttrValue "edges"         -< ks
+    edgeSource  <- pack <$> getAttrValue "edgeSource"    -< ks
+    edgeTarget  <- pack <$> getAttrValue "edgeTarget"    -< ks
+    forwardRate <- pack <$> getAttrValue "forwardRate"   -< ks
+    reverseRate <- pack <$> getAttrValue "reverseRate"   -< ks
     returnA -< KineticScheme name nodes stateVar edges edgeSource edgeTarget forwardRate reverseRate
 
 parseDynamics = atTag "Dynamics" >>>
@@ -324,37 +329,37 @@ parseDynamics = atTag "Dynamics" >>>
 
 parseChildInstance = atTag "ChildInstance" >>>
   proc childInstance -> do
-    component <- getAttrValue "component" -< childInstance
+    component <- pack <$> getAttrValue "component" -< childInstance
     returnA -< ChildInstance component
     
 parseMultiInstantiate = atTag "MultiInstantiate" >>>
   proc multiInstantiate -> do
-    component <- getAttrValue "component" -< multiInstantiate
-    number    <- getAttrValue "number" -< multiInstantiate
+    component <- pack <$> getAttrValue "component" -< multiInstantiate
+    number    <- pack <$> getAttrValue "number" -< multiInstantiate
     returnA -< MultiInstantiate component number
     
 parseEventConnection = atTag "EventConnection" >>>
   proc eventConnection -> do
-    from              <- getAttrValue "from"              -< eventConnection
-    to                <- getAttrValue "to"                -< eventConnection
-    sourcePort        <- getAttrValue "sourcePort"        -< eventConnection
-    targetPort        <- getAttrValue "targetPort"        -< eventConnection
-    receiver          <- getAttrValue "receiver"          -< eventConnection
-    receiverContainer <- getAttrValue "receiverContainer" -< eventConnection
+    from              <- pack <$> getAttrValue "from"              -< eventConnection
+    to                <- pack <$> getAttrValue "to"                -< eventConnection
+    sourcePort        <- pack <$> getAttrValue "sourcePort"        -< eventConnection
+    targetPort        <- pack <$> getAttrValue "targetPort"        -< eventConnection
+    receiver          <- pack <$> getAttrValue "receiver"          -< eventConnection
+    receiverContainer <- pack <$> getAttrValue "receiverContainer" -< eventConnection
     returnA -< EventConnection from to sourcePort targetPort receiver receiverContainer
 
 parseWith = atTag "With" >>>
   proc with -> do
-    instance_ <- getAttrValue "instance" -< with
-    as        <- getAttrValue "as"       -< with
+    instance_ <- pack <$> getAttrValue "instance" -< with
+    as        <- pack <$> getAttrValue "as"       -< with
     returnA -< With instance_ as
 
 parseForEach = atTag "ForEach" >>>
   proc forEach -> do
-    instances        <- getAttrValue "instances"        -< forEach
-    as               <- getAttrValue "as"               -< forEach
-    forEaches        <- childListA parseForEach         -< forEach
-    eventConnections <- childListA parseEventConnection -< forEach
+    instances        <- pack <$> getAttrValue "instances" -< forEach
+    as               <- pack <$> getAttrValue "as"        -< forEach
+    forEaches        <- childListA parseForEach           -< forEach
+    eventConnections <- childListA parseEventConnection   -< forEach
     returnA -< ForEach instances as forEaches eventConnections
 
 parseStructure = atTag "Structure" >>>
@@ -368,30 +373,30 @@ parseStructure = atTag "Structure" >>>
 
 parseRecord = atTag "Record" >>>
   proc record -> do
-    quantity  <- getAttrValue "quantity"  -< record
-    timeScale <- getAttrValue "timeScale" -< record
-    scale     <- getAttrValue "scale"     -< record
-    color     <- getAttrValue "color"     -< record
+    quantity  <- pack <$> getAttrValue "quantity"  -< record
+    timeScale <- pack <$> getAttrValue "timeScale" -< record
+    scale     <- pack <$> getAttrValue "scale"     -< record
+    color     <- pack <$> getAttrValue "color"     -< record
     returnA -< Record quantity timeScale scale color
 
 parseDataWriter = atTag "DataWriter" >>>
   proc dataWriter -> do
-    path     <- getAttrValue "path"     -< dataWriter
-    fileName <- getAttrValue "fileName" -< dataWriter
+    path     <- pack <$> getAttrValue "path"     -< dataWriter
+    fileName <- pack <$> getAttrValue "fileName" -< dataWriter
     returnA -< DataWriter path fileName
 
 parseDataDisplay = atTag "DataDisplay" >>>
   proc dataDisplay -> do
-    title      <- getAttrValue "title"      -< dataDisplay
-    dataRegion <- getAttrValue "dataRegion" -< dataDisplay
+    title      <- pack <$> getAttrValue "title"      -< dataDisplay
+    dataRegion <- pack <$> getAttrValue "dataRegion" -< dataDisplay
     returnA -< DataDisplay title dataRegion
 
 parseRun = atTag "Run" >>>
   proc run -> do
-    component <- getAttrValue "component" -< run
-    variable  <- getAttrValue "variable"  -< run
-    increment <- getAttrValue "increment" -< run
-    total     <- getAttrValue "total"     -< run
+    component <- pack <$> getAttrValue "component" -< run
+    variable  <- pack <$> getAttrValue "variable"  -< run
+    increment <- pack <$> getAttrValue "increment" -< run
+    total     <- pack <$> getAttrValue "total"     -< run
     returnA -< Run component variable increment total
 
 parseSimulation = atTag "Simulation" >>>
@@ -404,8 +409,8 @@ parseSimulation = atTag "Simulation" >>>
     
 parseComponentType = atTag "ComponentType" >>>
   proc compType -> do
-    name              <- getAttrValue "name"                          -< compType
-    extends           <- getAttrValue "extends"                       -< compType
+    name              <- pack <$> getAttrValue "name"                 -< compType
+    extends           <- pack <$> getAttrValue "extends"              -< compType
     parameters        <- childListA parseParameter                    -< compType
     fixedParameters   <- childListA parseFixed                        -< compType
     derivedParameters <- childListA parseDerivedParameter             -< compType
@@ -425,21 +430,21 @@ parseComponentType = atTag "ComponentType" >>>
 
 parseComponentExplicit = atTag "Component" >>>
   proc comp -> do
-    id       <- getAttrValue "id"      -< comp
-    name     <- getAttrValue "name"    -< comp
-    extends  <- getAttrValue "extends" -< comp
-    ctype    <- getAttrValue "type"    -< comp
-    attrList <- listA getAttrl         -< comp
+    id       <- pack <$> getAttrValue "id"                   -< comp
+    name     <- pack <$> getAttrValue "name"                 -< comp
+    extends  <- pack <$> getAttrValue "extends"              -< comp
+    ctype    <- pack <$> getAttrValue "type"                 -< comp
+    attrList <- listA getAttrl                               -< comp
     children <- childListA (parseComponentImplicit lemsTags) -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList) children
 
 parseComponentImplicit skipTags = notAtTags skipTags >>>
   proc comp -> do
-    id       <- getAttrValue "id"      -< comp
-    name     <- getAttrValue "name"    -< comp
-    extends  <- getAttrValue "extends" -< comp
-    ctype    <- getName                -< comp
-    attrList <- listA getAttrl    -< comp
+    id       <- pack <$> getAttrValue "id"                   -< comp
+    name     <- pack <$> getAttrValue "name"                 -< comp
+    extends  <- pack <$> getAttrValue "extends"              -< comp
+    ctype    <- pack <$> getName                             -< comp
+    attrList <- listA getAttrl                               -< comp
     children <- childListA (parseComponentImplicit lemsTags) -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList) children
 
@@ -447,11 +452,12 @@ parseComponent = parseComponentExplicit `orElse` (parseComponentImplicit lemsTop
 
 parseTarget = atTag "Target" >>>
   proc tgt -> do
-    component  <- getAttrValue "component"  -< tgt
-    reportFile <- getAttrValue "reportFile" -< tgt
-    timesFile  <- getAttrValue "timesFile"  -< tgt
+    component  <- pack <$> getAttrValue "component"  -< tgt
+    reportFile <- pack <$> getAttrValue "reportFile" -< tgt
+    timesFile  <- pack <$> getAttrValue "timesFile"  -< tgt
     returnA -< Just $ Target component reportFile timesFile
-       
+
+parseLems :: (ArrowXml cat, Functor (cat XmlTree)) => cat (NTree XNode) Lems
 parseLems = atDeepTag "Lems" >>>
   proc lems -> do
     includes   <- childListA parseInclude       -< lems
@@ -464,7 +470,7 @@ parseLems = atDeepTag "Lems" >>>
     tgt        <- withDefault (childA parseTarget) Nothing -< lems
     returnA -< Lems includes dimensions units assertions constants compTypes components tgt
 
-
+parseXML :: String -> IOStateArrow s b XmlTree
 parseXML xmlText = readString [ withValidate no
                               , withRemoveWS yes  -- throw away formating WS
                               ] xmlText
@@ -472,21 +478,21 @@ parseXML xmlText = readString [ withValidate no
 emptyModel = Lems [] [] [] [] [] [] [] Nothing
 
 concatModels []     = emptyModel
-concatModels (m:ms) = let msc = concatModels ms
-                          d1 = lemsDimensions m
-                          u1 = lemsUnits m
-                          a1 = lemsAssertions m
+concatModels (m:ms) = let msc  = concatModels ms
+                          d1   = lemsDimensions m
+                          u1   = lemsUnits m
+                          a1   = lemsAssertions m
                           cns1 = lemsConstants m
-                          ct1 = lemsCompTypes m
+                          ct1  = lemsCompTypes m
                           cmp1 = lemsComponents m
-                          t1 = lemsTarget m
-                          d2 = lemsDimensions msc
-                          u2 = lemsUnits msc
-                          a2 = lemsAssertions msc
+                          t1   = lemsTarget m
+                          d2   = lemsDimensions msc
+                          u2   = lemsUnits msc
+                          a2   = lemsAssertions msc
                           cns2 = lemsConstants msc
-                          ct2 = lemsCompTypes msc
+                          ct2  = lemsCompTypes msc
                           cmp2 = lemsComponents msc
-                          t2 = lemsTarget msc
+                          t2   = lemsTarget msc
                           tnew = if isNothing t1 then t2 else t1
                       in Lems [] (d1 ++ d2) (u1 ++ u2) (a1 ++ a2) (cns1 ++ cns2) (ct1 ++ ct2) (cmp1 ++ cmp2) tnew
 
@@ -511,15 +517,15 @@ parseLemsXMLFile :: [String]        -- ^ List of directories to search for inclu
 parseLemsXMLFile includeDirs xmlFile = do
   contents <- readFile xmlFile
   maybeModel <- parseLemsXML contents
-  Monad.when (isNothing maybeModel) $ error "Unable to parse XML file"
+  Monad.when (isNothing maybeModel) $ error ("Unable to parse XML file " ++ xmlFile)
   let model = fromJust maybeModel
-      includedFiles = map includeFile $ lemsIncludes $ model
+      includedFiles = map (unpack . includeFile) $ lemsIncludes $ model
   includedModels <- mapM (findAndParseLemsXMLIncludeFile includeDirs) includedFiles
   return $ Just $ concatModels $ model:(catMaybes includedModels)
 
-  
 -----------------------------------------------------------------------------------------------------------
 
+test :: String -> IO ()
 test file = do
   --contents <- readFile file
   --model <- parseLemsXML contents
@@ -542,6 +548,7 @@ test file = do
   putStrLn ""
   putStrLn $ show $ map compId <$> lemsComponents <$> model
 
+testLems :: String -> IO ()
 testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFile
 
 test1 = testLems "example4.xml"
@@ -551,6 +558,6 @@ test2 = do
     putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
     putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
 
-ex4 = "/home/gautham/work/NeuroML/LEMS/examples/example4.xml"
+ex4 = "/home/gautham/work/NeuroML/LEMS/examples/example4.xml" :: String
 
-includeDirs = ["/home/gautham/work/NeuroML/LEMS/examples"]
+includeDirs = ["/home/gautham/work/NeuroML/LEMS/examples"] :: [String]
