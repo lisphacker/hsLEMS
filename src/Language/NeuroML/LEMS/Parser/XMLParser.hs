@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Arrows, NoMonomorphismRestriction #-}
 {-|
 Module      : Language.NeuroML.LEMS.Parser.XMLParser
@@ -33,7 +32,7 @@ import Data.Functor
 
 import System.Directory
 
-import Data.Text (pack, unpack, Text)
+import Data.Text (pack, unpack, Text(..))
 
 lemsTopLevelTags = ["Dimension", "Unit", "Assertion",
                     "Include", "Constant",
@@ -457,7 +456,8 @@ parseTarget = atTag "Target" >>>
     timesFile  <- pack <$> getAttrValue "timesFile"  -< tgt
     returnA -< Just $ Target component reportFile timesFile
 
-parseLems :: (ArrowXml cat, Functor (cat XmlTree)) => cat (NTree XNode) Lems
+--parseLems :: (ArrowXml cat, Functor (cat XmlTree)) => cat XmlTree Lems
+parseLems :: (ArrowXml cat, Functor (cat XmlTree)) => cat XmlTree Lems
 parseLems = atDeepTag "Lems" >>>
   proc lems -> do
     includes   <- childListA parseInclude       -< lems
