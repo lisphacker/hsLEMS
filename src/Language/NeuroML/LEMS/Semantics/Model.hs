@@ -13,27 +13,29 @@ module Language.NeuroML.LEMS.Semantics.Model where
 
 import Data.Map.Strict as M
 
+import Data.Text
+
 -- | Definition of a dimension as a combinations of base SI units.
-data Dimension = Dimension { dimName        :: String  -- ^ Name of the dimension
-                           , dimMass        :: Int     -- ^ Mass (kilogram, kg)
-                           , dimLength      :: Int     -- ^ Length (metre, m)
-                           , dimTime        :: Int     -- ^ Time (second, s)
-                           , dimCurrent     :: Int     -- ^ Electric current (ampere, A)
-                           , dimTemperature :: Int     -- ^ Thermodynamic temperature (kelvin, K)
-                           , dimQuantity    :: Int     -- ^ Quantity (mole, mol)
-                           , dimLumInt      :: Int     -- ^ Luminous intensity (candela, cd)
+data Dimension = Dimension { dimName        :: Text -- ^ Name of the dimension
+                           , dimMass        :: Int  -- ^ Mass (kilogram, kg)
+                           , dimLength      :: Int  -- ^ Length (metre, m)
+                           , dimTime        :: Int  -- ^ Time (second, s)
+                           , dimCurrent     :: Int  -- ^ Electric current (ampere, A)
+                           , dimTemperature :: Int  -- ^ Thermodynamic temperature (kelvin, K)
+                           , dimQuantity    :: Int  -- ^ Quantity (mole, mol)
+                           , dimLumInt      :: Int  -- ^ Luminous intensity (candela, cd)
                            } deriving (Show)
-type DimensionMap = M.Map String Dimension             -- ^ Map of names to dimensions
+type DimensionMap = M.Map Text Dimension          -- ^ Map of names to dimensions
 
 -- | Definition of a unit symbol as a scaled dimension.
-data Unit = Unit { unitName      :: String    -- ^ Name of the unit
-                 , unitSymbol    :: String    -- ^ Unit symbol
+data Unit = Unit { unitName      :: Text      -- ^ Name of the unit
+                 , unitSymbol    :: Text      -- ^ Unit symbol
                  , unitDimension :: Dimension -- ^ Name of the dimension being scaled
                  , unitPower10   :: Int       -- ^ Power of 10 scale value
                  , unitScale     :: Double    -- ^ Non-power of 10 scale value
                  , unitOffset    :: Double    -- ^ Non-zero offset
                  } deriving (Show)
-type UnitMap = M.Map String Dimension         -- ^ Map of symbols to units
+type UnitMap = M.Map Text Dimension         -- ^ Map of symbols to units
 
 
 

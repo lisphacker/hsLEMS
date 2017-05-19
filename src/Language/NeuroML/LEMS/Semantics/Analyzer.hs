@@ -15,6 +15,8 @@ import Data.Maybe
 import Data.Functor
 import Control.Monad as Monad
 
+import Data.Text (pack, unpack)
+
 import qualified Data.Map.Strict as M (empty, insert, lookup)
 
 import qualified Language.NeuroML.LEMS.Parser as P
@@ -40,7 +42,9 @@ processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
   where processUnits = foldl (\m u -> M.insert (P.unitSymbol u) (convert u) m) M.empty
         convert u = let name   = P.unitName u
                         symbol = P.unitSymbol u
-                        dim    = fromJust $ M.lookup (P.unitDimension u) dimMap
+                        dim    = case M.lookup (P.unitDimension u) dimMap of
+                                   Just d  -> d
+                                   Nothing -> error $ "Unknown dimension "
                         pow10  = P.unitPower10 u
                         scale  = P.unitScale u
                         offset = P.unitOffset u
@@ -63,8 +67,8 @@ test file = do
   let parseTree = fromJust maybeParseTree
       dimMap = processPTDimensions parseTree
       unitMap = processPTUnits dimMap parseTree
-  putStrLn $ show $ M.lookup "capacitance" dimMap
-  putStrLn $ show $ M.lookup "mV" unitMap
+  putStrLn $ show $ M.lookup (pack "capacitance") dimMap
+  putStrLn $ show $ M.lookup (pack "mV") unitMap
   
 
 testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFile
