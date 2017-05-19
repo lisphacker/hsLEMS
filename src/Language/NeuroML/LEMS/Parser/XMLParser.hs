@@ -37,7 +37,7 @@ import Data.Text (pack, unpack, Text(..))
 
 lemsTopLevelTags = ["Dimension", "Unit", "Assertion",
                     "Include", "Constant",
-                    "ComponentType", "Component", "Target"] :: [String]
+                    "ComponentType", "Component", "Target"]
   
 lemsTags = ["Lems",
             "Dimension", "Unit", "Assertion",
@@ -66,7 +66,7 @@ lemsTags = ["Lems",
             "EventConnection",
 
             "Simulation",
-            "Record", "DataDisplay", "DataWriter", "Run"] :: [String]
+            "Record", "DataDisplay", "DataWriter", "Run"]
 
 
 hasNames []         = hasName ""
@@ -93,7 +93,6 @@ childListA parseFn = listA (getChildren >>> parseFn)
 childA parseFn = getChildren >>> parseFn
 
 
-getAttrMap :: [String] -> [NTree XNode] -> M.Map Text Text
 getAttrMap skipNames trees = getAttrMap' M.empty trees
   where getAttrMap' map []     = map
         getAttrMap' map (t:ts) = let (name, value) = (getAttr t)
