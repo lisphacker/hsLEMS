@@ -25,7 +25,7 @@ data Dimension = Dimension { dimName        :: Text -- ^ Name of the dimension
                            , dimQuantity    :: Int  -- ^ Quantity (mole, mol)
                            , dimLumInt      :: Int  -- ^ Luminous intensity (candela, cd)
                            } deriving (Show)
-type DimensionMap = M.Map Text Dimension          -- ^ Map of names to dimensions
+type DimensionMap = M.Map Text Dimension            -- ^ Map of names to dimensions
 
 -- | Definition of a unit symbol as a scaled dimension.
 data Unit = Unit { unitName      :: Text      -- ^ Name of the unit
@@ -35,7 +35,7 @@ data Unit = Unit { unitName      :: Text      -- ^ Name of the unit
                  , unitScale     :: Double    -- ^ Non-power of 10 scale value
                  , unitOffset    :: Double    -- ^ Non-zero offset
                  } deriving (Show)
-type UnitMap = M.Map Text Dimension         -- ^ Map of symbols to units
+type UnitMap = M.Map Text Dimension           -- ^ Map of symbols to units
 
 
 
@@ -43,4 +43,3 @@ type UnitMap = M.Map Text Dimension         -- ^ Map of symbols to units
 data Lems = Lems { lemsDimensions :: DimensionMap
                  , lemsUnits      :: UnitMap
                  } deriving (Show)
-
