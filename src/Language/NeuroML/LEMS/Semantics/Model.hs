@@ -11,6 +11,8 @@ LEMS model after being parsed from XML.
 -}
 module Language.NeuroML.LEMS.Semantics.Model where
 
+import Protolude
+
 import Data.Map.Strict as M
 
 import Data.Text

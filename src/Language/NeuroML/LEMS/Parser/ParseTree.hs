@@ -52,6 +52,8 @@ module Language.NeuroML.LEMS.Parser.ParseTree
   , Lems(..)
   ) where
 
+import Protolude
+
 import Data.Map.Strict
 
 import Text.XML.HXT.Core hiding (xread)

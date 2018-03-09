@@ -11,6 +11,11 @@ LEMS model after being parsed from XML.
 -}
 module Language.NeuroML.LEMS.Semantics.Analyzer where
 
+import Protolude
+import Protolude.Error
+
+import Data.String
+
 import Data.Maybe
 import Data.Functor
 import Control.Monad as Monad
@@ -59,6 +64,9 @@ processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
 
 -----------------------------------------------------------------------------------------------------------
 
+strout :: String -> IO ()
+strout = putStrLn
+
 includeDirs = ["/home/gautham/work/NeuroML/LEMS/examples"]
 
 test file = do
@@ -67,8 +75,8 @@ test file = do
   let parseTree = fromJust maybeParseTree
       dimMap = processPTDimensions parseTree
       unitMap = processPTUnits dimMap parseTree
-  putStrLn $ show $ M.lookup (pack "capacitance") dimMap
-  putStrLn $ show $ M.lookup (pack "mV") unitMap
+  strout $ show $ M.lookup (pack "capacitance") dimMap
+  strout $ show $ M.lookup (pack "mV") unitMap
   
 
 testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFile

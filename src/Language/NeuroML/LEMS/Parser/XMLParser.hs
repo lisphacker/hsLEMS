@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Arrows, NoMonomorphismRestriction #-}
 {-|
 Module      : Language.NeuroML.LEMS.Parser.XMLParser
@@ -16,6 +15,8 @@ module Language.NeuroML.LEMS.Parser.XMLParser
   , parseLemsXMLFile
   ) where
 
+import Protolude hiding (orElse)
+
 import Text.XML.HXT.Core hiding (xread)
 import Language.NeuroML.LEMS.Parser.ParseTree
 
@@ -30,6 +31,7 @@ import Control.Applicative (liftA)
 
 import Data.Maybe
 import Data.Functor
+import Data.String
 
 import System.Directory
 
@@ -76,18 +78,14 @@ atDeepTag tag = deep (isElem >>> hasName tag)
 atTag tag =  (isElem >>> hasName tag)
 
 notAtTags tags =  (isElem >>> neg (hasNames tags))
-
 strToInt i s = let l = reads s :: [(Int, String)]
-             in if length l == 0 then
-                  i
-                else
-                  (fst . head) l
-
+               in case l of
+                    []     -> i
+                    (x:xs) -> fst x
 strToDouble d s = let l = reads s :: [(Double, String)]
-                  in if length l == 0 then
-                       d
-                     else
-                       (fst . head) l
+                  in case l of
+                       []     -> d
+                       (x:xs) -> fst x
 
 childListA parseFn = listA (getChildren >>> parseFn)
 childA parseFn = getChildren >>> parseFn
@@ -101,7 +99,7 @@ getAttrMap skipNames trees = getAttrMap' M.empty trees
                                       getAttrMap' map ts
                                     else
                                       getAttrMap' (M.insert (pack name) (pack value) map) ts
-          where getAttr (NTree (XAttr name) children) = (cleanString name, getAttrValue (head children))
+          where getAttr (NTree (XAttr name) children) = (cleanString name, getAttrValue (fromJust $ head children))
                 getAttrValue (NTree (XText value) _) = cleanString value
                 cleanString name = filter (\c -> c /= '"') $ show name
           
@@ -512,15 +510,26 @@ parseLemsXMLFile :: [String]        -- ^ List of directories to search for inclu
                  -> String          -- ^ Path to the file to be parsed
                  -> IO (Maybe Lems)
 parseLemsXMLFile includeDirs xmlFile = do
-  contents <- readFile xmlFile
+  contents <- show <$> readFile xmlFile
   maybeModel <- parseLemsXML contents
+  {-
   Monad.when (isNothing maybeModel) $ error ("Unable to parse XML file " ++ xmlFile)
   let model = fromJust maybeModel
       includedFiles = map (unpack . includeFile) $ lemsIncludes $ model
   includedModels <- mapM (findAndParseLemsXMLIncludeFile includeDirs) includedFiles
   return $ Just $ concatModels $ model:(catMaybes includedModels)
+  -}
+  case maybeModel of
+    Just model -> do
+      let includedFiles = map (unpack . includeFile) $ lemsIncludes $ model
+      includedModels <- mapM (findAndParseLemsXMLIncludeFile includeDirs) includedFiles
+      return $ Just $ concatModels $ model:(catMaybes includedModels)
+    Nothing -> return Nothing
 
 -----------------------------------------------------------------------------------------------------------
+
+strout :: String -> IO ()
+strout = putStrLn
 
 test :: String -> IO ()
 test file = do
@@ -529,21 +538,21 @@ test file = do
   model <- parseLemsXMLFile includeDirs file
   let ctype = fromMaybe Nothing $ listToMaybe <$> filter (\ct -> compTypeName ct == "KSState") <$> lemsCompTypes <$> model
   let comp = fromMaybe Nothing $ listToMaybe <$> filter (\c -> compId c == "na1") <$> lemsComponents <$> model
-  putStrLn $ show model
-  putStrLn ""
-  putStrLn ""
-  putStrLn ""
-  putStrLn $ show ctype
-  putStrLn ""
-  putStrLn $ show $ fmap compTypeSimulation $  ctype
-  putStrLn ""
-  putStrLn ""
-  putStrLn ""
-  putStrLn $ show $ comp
-  putStrLn ""
-  putStrLn ""
-  putStrLn ""
-  putStrLn $ show $ map compId <$> lemsComponents <$> model
+  strout $ show model
+  strout ""
+  strout ""
+  strout ""
+  strout $ show ctype
+  strout ""
+  strout $ show $ fmap compTypeSimulation $  ctype
+  strout ""
+  strout ""
+  strout ""
+  strout $ show $ comp
+  strout ""
+  strout ""
+  strout ""
+  strout $ show $ map compId <$> lemsComponents <$> model
 
 testLems :: String -> IO ()
 testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFile
@@ -552,8 +561,8 @@ test1 = testLems "example4.xml"
 
 test2 = do
     contents <- readFile "/home/gautham/work/NeuroML/LEMS/examples/example1.xml"
-    putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
-    putStrLn $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
+    strout $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
+    strout $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
 
 ex4 = "/home/gautham/work/NeuroML/LEMS/examples/example4.xml" :: String
 
