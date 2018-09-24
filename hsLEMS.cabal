@@ -17,7 +17,6 @@ executable hsLEMS
   hs-source-dirs:      prog-src
   ghc-options:         -Wall
   main-is:             Main.hs
-  default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , containers >= 0.5.7.1
                      , protolude
