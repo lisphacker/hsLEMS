@@ -19,6 +19,7 @@ executable hsLEMS
   main-is:             Main.hs
   build-depends:       base >= 4.7 && < 5
                      , containers >= 0.5.7.1
+                     , hsLEMS
                      , optparse-applicative
                      , protolude
   default-language:    Haskell2010
