@@ -527,7 +527,7 @@ parseLemsXMLFile includeDirs xmlFile = do
     Nothing -> return Nothing
 
 -----------------------------------------------------------------------------------------------------------
-
+{-
 strout :: String -> IO ()
 strout = putStrLn
 
@@ -567,3 +567,4 @@ test2 = do
 ex4 = "/home/gautham/work/NeuroML/LEMS/examples/example4.xml" :: String
 
 includeDirs = ["/home/gautham/work/NeuroML/LEMS/examples"] :: [String]
+-}

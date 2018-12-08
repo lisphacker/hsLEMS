@@ -1,4 +1,3 @@
-{-# LANGUAGE Arrows, NoMonomorphismRestriction #-}
 {-|
 Module      : Language.NeuroML.LEMS.Parser
 Description : LEMS parser
@@ -11,9 +10,8 @@ Portability : POSIX
 Parser for a LEMS (XML) model.
 -}
 module Language.NeuroML.LEMS.Parser
-  ( module Language.NeuroML.LEMS.Parser.ParseTree
-  , module Language.NeuroML.LEMS.Parser.XMLParser
+  ( module X
   ) where
 
-import Language.NeuroML.LEMS.Parser.ParseTree
-import Language.NeuroML.LEMS.Parser.XMLParser
+import Language.NeuroML.LEMS.Parser.ParseTree as X
+import Language.NeuroML.LEMS.Parser.XMLParser as X
