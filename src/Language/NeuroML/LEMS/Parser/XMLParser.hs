@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# LANGUAGE Arrows, NoMonomorphismRestriction #-}
 {-|
 Module      : Language.NeuroML.LEMS.Parser.XMLParser
@@ -22,25 +23,22 @@ import Language.NeuroML.LEMS.Parser.ParseTree
 
 import qualified Data.Map.Strict as M
 
-import Text.XML.HXT.Parser.XmlParsec (xread)
-import Text.XML.HXT.Arrow.XmlState
 import Data.Tree.NTree.TypeDefs
 
-import Control.Monad as Monad
-import Control.Applicative (liftA)
 
 import Data.Maybe
-import Data.Functor
 import Data.String
 
 import System.Directory
 
-import Data.Text (pack, unpack, Text(..))
+import Data.Text (pack, unpack)
 
+lemsTopLevelTags :: IsString a => [a]
 lemsTopLevelTags = ["Dimension", "Unit", "Assertion",
                     "Include", "Constant",
                     "ComponentType", "Component", "Target"]
   
+lemsTags :: IsString a => [a]
 lemsTags = ["Lems",
             "Dimension", "Unit", "Assertion",
             "Include", "Constant",
@@ -71,26 +69,35 @@ lemsTags = ["Lems",
             "Record", "DataDisplay", "DataWriter", "Run"]
 
 
+hasNames :: ArrowXml a => [String] -> a XmlTree XmlTree
 hasNames []         = hasName ""
 hasNames (tag:tags) = (hasName tag) `orElse` (hasNames tags)
 
+atDeepTag :: ArrowXml a => String -> a (NTree XNode) XmlTree
 atDeepTag tag = deep (isElem >>> hasName tag)
+atTag :: ArrowXml cat => String -> cat XmlTree XmlTree
 atTag tag =  (isElem >>> hasName tag)
 
+notAtTags :: ArrowXml cat => [String] -> cat XmlTree XmlTree
 notAtTags tags =  (isElem >>> neg (hasNames tags))
+strToInt :: Int -> String -> Int
 strToInt i s = let l = reads s :: [(Int, String)]
                in case l of
                     []     -> i
-                    (x:xs) -> fst x
+                    (x:_) -> fst x
+strToDouble :: Double -> String -> Double
 strToDouble d s = let l = reads s :: [(Double, String)]
                   in case l of
                        []     -> d
-                       (x:xs) -> fst x
+                       (x:_) -> fst x
 
+childListA :: (ArrowTree a, Tree t) => a (t b) c -> a (t b) [c]
 childListA parseFn = listA (getChildren >>> parseFn)
+childA :: (ArrowTree cat, Tree t) => cat (t b) c -> cat (t b) c
 childA parseFn = getChildren >>> parseFn
 
 
+getAttrMap :: Foldable t => t [Char] -> [NTree XNode] -> Map Text Text
 getAttrMap skipNames trees = getAttrMap' M.empty trees
   where getAttrMap' map []     = map
         getAttrMap' map (t:ts) = let (name, value) = (getAttr t)
@@ -100,9 +107,14 @@ getAttrMap skipNames trees = getAttrMap' M.empty trees
                                     else
                                       getAttrMap' (M.insert (pack name) (pack value) map) ts
           where getAttr (NTree (XAttr name) children) = (cleanString name, getAttrValue (fromJust $ head children))
+                getAttr _                             = ("", "")
+                
                 getAttrValue (NTree (XText value) _) = cleanString value
+                getAttrValue _                       = ""
+                
                 cleanString name = filter (\c -> c /= '"') $ show name
           
+parseDimension :: ArrowXml cat => cat XmlTree Dimension
 parseDimension = atTag "Dimension" >>>
   proc dim -> do
     name <- getAttrValue "name" -< dim
@@ -123,6 +135,7 @@ parseDimension = atTag "Dimension" >>>
                 (strToInt 0 j))
 
 
+parseUnit :: ArrowXml cat => cat XmlTree Unit
 parseUnit = atTag "Unit" >>>
   proc unit -> do
     name      <- pack ^<< getAttrValue "name"      -< unit
@@ -133,12 +146,14 @@ parseUnit = atTag "Unit" >>>
     offset    <- getAttrValue "offset"             -< unit
     returnA -< Unit name symbol dimension (strToInt 0 power) (strToDouble 0.0 scale) (strToDouble 0.0 offset)
        
+parseAssertion :: ArrowXml cat => cat XmlTree Assertion
 parseAssertion = atTag "Assertion" >>>
   proc assertion -> do
     dimension <- pack ^<< getAttrValue "dimension" -< assertion
     matches   <- pack ^<< getAttrValue "matches"   -< assertion
     returnA -< Assertion dimension matches
        
+parseConstant :: ArrowXml cat => cat XmlTree Constant
 parseConstant = atTag "Constant" >>>
   proc constant -> do
     name      <- pack ^<< getAttrValue "name"      -< constant
@@ -147,23 +162,27 @@ parseConstant = atTag "Constant" >>>
     dimension <- pack ^<< getAttrValue "dimension" -< constant
     returnA -< Constant name matches value dimension
 
+parseInclude :: ArrowXml cat => cat XmlTree Include
 parseInclude = atTag "Include" >>>
   proc include -> do
     file <- pack ^<< getAttrValue "file" -< include
     returnA -< Include file
 
+parseParameter :: ArrowXml cat => cat XmlTree Parameter
 parseParameter = atTag "Parameter" >>>
   proc parameter -> do
     name      <- pack ^<< getAttrValue "name"      -< parameter
     dimension <- pack ^<< getAttrValue "dimension" -< parameter
     returnA -< Parameter name dimension
     
+parseFixed :: ArrowXml cat => cat XmlTree Fixed
 parseFixed = atTag "Fixed" >>>
   proc fixed -> do
     name   <- pack ^<< getAttrValue "name"      -< fixed
     value  <- pack ^<< getAttrValue "value" -< fixed
     returnA -< Fixed name value
     
+parseDerivedParameter :: ArrowXml cat => cat XmlTree DerivedParameter
 parseDerivedParameter = atTag "DerivedParameter" >>>
   proc derivedParameter -> do
     name      <- pack ^<< getAttrValue "name"      -< derivedParameter
@@ -172,58 +191,68 @@ parseDerivedParameter = atTag "DerivedParameter" >>>
     value     <- pack ^<< getAttrValue "value"     -< derivedParameter
     returnA -< DerivedParameter name dimension select value
     
+parseComponentReference :: ArrowXml cat => cat XmlTree ComponentReference
 parseComponentReference = atTag "ComponentReference" >>>
   proc componentReference -> do
     name  <- pack ^<< getAttrValue "name" -< componentReference
     ctype <- pack ^<< getAttrValue "type" -< componentReference
     returnA -< ComponentReference name ctype
     
+parseLink :: ArrowXml cat => cat XmlTree Link
 parseLink = atTag "Link" >>>
   proc link -> do
     name  <- pack ^<< getAttrValue "name" -< link
     ctype <- pack ^<< getAttrValue "type" -< link
     returnA -< Link name ctype
     
+parseExposure :: ArrowXml cat => cat XmlTree Exposure
 parseExposure = atTag "Exposure" >>>
   proc exposure -> do
     name      <- pack ^<< getAttrValue "name"      -< exposure
     dimension <- pack ^<< getAttrValue "dimension" -< exposure
     returnA -< Exposure name dimension
 
+parseRequirement :: ArrowXml cat => cat XmlTree Requirement
 parseRequirement = atTag "Requirement" >>>
   proc requirement -> do
     name      <- pack ^<< getAttrValue "name"      -< requirement
     dimension <- pack ^<< getAttrValue "dimension" -< requirement
     returnA -< Requirement name dimension
 
+parseChild :: ArrowXml cat => cat XmlTree Child
 parseChild = atTag "Child" >>>
   proc child -> do
     name  <- pack ^<< getAttrValue "name" -< child
     ctype <- pack ^<< getAttrValue "type" -< child
     returnA -< Child name ctype
 
+parseChildren :: ArrowXml cat => cat XmlTree Children
 parseChildren = atTag "Children" >>>
   proc children -> do
     name  <- pack ^<< getAttrValue "name" -< children
     ctype <- pack ^<< getAttrValue "type" -< children
     returnA -< Children name ctype
 
+parseEventPort :: ArrowXml cat => cat XmlTree EventPort
 parseEventPort = atTag "EventPort" >>>
   proc eventPort -> do
     name      <- pack ^<< getAttrValue "name"      -< eventPort
     dimension <- pack ^<< getAttrValue "dimension" -< eventPort
     returnA -< EventPort name dimension
 
+parseText :: ArrowXml cat => cat XmlTree Txt
 parseText = atTag "Text" >>>
   proc text -> do
     name <- pack ^<< getAttrValue "name" -< text
     returnA -< Txt name
     
+parsePath :: ArrowXml cat => cat XmlTree Path
 parsePath = atTag "Path" >>>
   proc path -> do
     name <- pack ^<< getAttrValue "name" -< path
     returnA -< Path name
     
+parseStateVariable :: ArrowXml cat => cat XmlTree StateVariable
 parseStateVariable = atTag "StateVariable" >>>
   proc stateVariable -> do
     name      <- pack ^<< getAttrValue "name"      -< stateVariable
@@ -231,6 +260,7 @@ parseStateVariable = atTag "StateVariable" >>>
     dimension <- pack ^<< getAttrValue "dimension" -< stateVariable
     returnA -< StateVariable name exposure dimension
 
+parseDerivedVariable :: ArrowXml cat => cat XmlTree DerivedVariable
 parseDerivedVariable = atTag "DerivedVariable" >>>
   proc derivedVariable -> do
     name      <- pack ^<< getAttrValue "name"      -< derivedVariable
@@ -242,65 +272,77 @@ parseDerivedVariable = atTag "DerivedVariable" >>>
     required  <- pack ^<< getAttrValue "required"  -< derivedVariable
     returnA -< DerivedVariable name exposure dimension value select reduce required
 
+parseTimeDerivative :: ArrowXml cat => cat XmlTree TimeDerivative
 parseTimeDerivative = atTag "TimeDerivative" >>>
   proc timeDerivative -> do
     variable <- pack ^<< getAttrValue "variable" -< timeDerivative
     value    <- pack ^<< getAttrValue "value"    -< timeDerivative
     returnA -< TimeDerivative variable value
 
+parseStateAssignment :: ArrowXml cat => cat XmlTree Action
 parseStateAssignment = atTag "StateAssignment" >>>
   proc stateAssignment -> do
     variable <- pack ^<< getAttrValue "variable" -< stateAssignment
     value    <- pack ^<< getAttrValue "value"    -< stateAssignment
     returnA -< StateAssignment variable value
 
+parseEventOut :: ArrowXml cat => cat XmlTree Action
 parseEventOut = atTag "EventOut" >>>
   proc eventOut -> do
     port <- pack ^<< getAttrValue "port" -< eventOut
     returnA -< EventOut port
     
+parseTransition :: ArrowXml cat => cat XmlTree Action
 parseTransition = atTag "Transition" >>>
   proc transition -> do
     regime <- pack ^<< getAttrValue "regime" -< transition
     returnA -< Transition regime
     
+parseEventAction :: ArrowXml a => a XmlTree Action
 parseEventAction = parseStateAssignment `orElse` parseEventOut `orElse` parseTransition
 
+parseOnStart :: ArrowXml cat => cat XmlTree EventHandler
 parseOnStart = atTag "OnStart" >>>
   proc onStart -> do
     eventActions <- childListA parseEventAction -< onStart
     returnA -< OnStart eventActions
 
+parseOnEntry :: ArrowXml cat => cat XmlTree EventHandler
 parseOnEntry = atTag "OnEntry" >>>
   proc onEntry -> do
     eventActions <- childListA parseEventAction -< onEntry
     returnA -< OnEntry eventActions
 
+parseOnCondition :: ArrowXml cat => cat XmlTree EventHandler
 parseOnCondition = atTag "OnCondition" >>>
   proc onCondition -> do
     test         <- pack ^<< getAttrValue "test" -< onCondition
     eventActions <- childListA parseEventAction  -< onCondition
     returnA -< OnCondition test eventActions
 
+parseOnEvent :: ArrowXml cat => cat XmlTree EventHandler
 parseOnEvent = atTag "OnEvent" >>>
   proc onEvent -> do
     port         <- pack ^<< getAttrValue "port" -< onEvent
     eventActions <- childListA parseEventAction  -< onEvent
     returnA -< OnEvent port eventActions
 
+parseEventHandler :: ArrowXml a => a XmlTree EventHandler
 parseEventHandler = parseOnStart `orElse` parseOnCondition `orElse` parseOnEvent `orElse` parseOnEntry
 
+parseRegime :: ArrowXml cat => cat XmlTree Regime
 parseRegime = atTag "Regime" >>>
   proc regime -> do
     name             <- pack ^<< getAttrValue "name"    -< regime
     initial          <- pack ^<< getAttrValue "initial" -< regime
-    stateVariables   <- childListA parseStateVariable   -< regime
+    --stateVariables   <- childListA parseStateVariable   -< regime
     stateVariables   <- childListA parseStateVariable   -< regime
     timeDerivatives  <- childListA parseTimeDerivative  -< regime
     derivedVariables <- childListA parseDerivedVariable -< regime
     eventHandlers    <- childListA parseEventHandler    -< regime
     returnA -< Regime name initial stateVariables timeDerivatives derivedVariables eventHandlers
 
+parseKineticScheme :: ArrowXml cat => cat XmlTree KineticScheme
 parseKineticScheme = atTag "KineticScheme" >>>
   proc ks -> do
     name        <- pack ^<< getAttrValue "name"          -< ks
@@ -313,9 +355,10 @@ parseKineticScheme = atTag "KineticScheme" >>>
     reverseRate <- pack ^<< getAttrValue "reverseRate"   -< ks
     returnA -< KineticScheme name nodes stateVar edges edgeSource edgeTarget forwardRate reverseRate
 
+parseDynamics :: ArrowXml cat => cat XmlTree (Maybe Dynamics)
 parseDynamics = atTag "Dynamics" >>>
   proc dynamics -> do
-    stateVariables   <- childListA parseStateVariable   -< dynamics
+    --stateVariables   <- childListA parseStateVariable   -< dynamics
     stateVariables   <- childListA parseStateVariable   -< dynamics
     timeDerivatives  <- childListA parseTimeDerivative  -< dynamics
     derivedVariables <- childListA parseDerivedVariable -< dynamics
@@ -324,17 +367,20 @@ parseDynamics = atTag "Dynamics" >>>
     kineticSchemes   <- childListA parseKineticScheme   -< dynamics
     returnA -< Just $ Dynamics stateVariables timeDerivatives derivedVariables eventHandlers regimes kineticSchemes
 
+parseChildInstance :: ArrowXml cat => cat XmlTree ChildInstance
 parseChildInstance = atTag "ChildInstance" >>>
   proc childInstance -> do
     component <- pack ^<< getAttrValue "component" -< childInstance
     returnA -< ChildInstance component
     
+parseMultiInstantiate :: ArrowXml cat => cat XmlTree MultiInstantiate
 parseMultiInstantiate = atTag "MultiInstantiate" >>>
   proc multiInstantiate -> do
     component <- pack ^<< getAttrValue "component" -< multiInstantiate
     number    <- pack ^<< getAttrValue "number" -< multiInstantiate
     returnA -< MultiInstantiate component number
     
+parseEventConnection :: ArrowXml cat => cat XmlTree EventConnection
 parseEventConnection = atTag "EventConnection" >>>
   proc eventConnection -> do
     from              <- pack ^<< getAttrValue "from"              -< eventConnection
@@ -345,12 +391,14 @@ parseEventConnection = atTag "EventConnection" >>>
     receiverContainer <- pack ^<< getAttrValue "receiverContainer" -< eventConnection
     returnA -< EventConnection from to sourcePort targetPort receiver receiverContainer
 
+parseWith :: ArrowXml cat => cat XmlTree With
 parseWith = atTag "With" >>>
   proc with -> do
     instance_ <- pack ^<< getAttrValue "instance" -< with
     as        <- pack ^<< getAttrValue "as"       -< with
     returnA -< With instance_ as
 
+parseForEach :: ArrowXml cat => cat (NTree XNode) ForEach
 parseForEach = atTag "ForEach" >>>
   proc forEach -> do
     instances        <- pack ^<< getAttrValue "instances" -< forEach
@@ -359,6 +407,7 @@ parseForEach = atTag "ForEach" >>>
     eventConnections <- childListA parseEventConnection   -< forEach
     returnA -< ForEach instances as forEaches eventConnections
 
+parseStructure :: ArrowXml cat => cat XmlTree (Maybe Structure)
 parseStructure = atTag "Structure" >>>
   proc structure -> do
     childInstances   <- childListA parseChildInstance    -< structure
@@ -368,6 +417,7 @@ parseStructure = atTag "Structure" >>>
     forEaches        <- childListA parseForEach          -< structure
     returnA -< Just $ Structure childInstances multiInstances eventConnections withs forEaches
 
+parseRecord :: ArrowXml cat => cat XmlTree Record
 parseRecord = atTag "Record" >>>
   proc record -> do
     quantity  <- pack ^<< getAttrValue "quantity"  -< record
@@ -376,18 +426,21 @@ parseRecord = atTag "Record" >>>
     color     <- pack ^<< getAttrValue "color"     -< record
     returnA -< Record quantity timeScale scale color
 
+parseDataWriter :: ArrowXml cat => cat XmlTree DataWriter
 parseDataWriter = atTag "DataWriter" >>>
   proc dataWriter -> do
     path     <- pack ^<< getAttrValue "path"     -< dataWriter
     fileName <- pack ^<< getAttrValue "fileName" -< dataWriter
     returnA -< DataWriter path fileName
 
+parseDataDisplay :: ArrowXml cat => cat XmlTree DataDisplay
 parseDataDisplay = atTag "DataDisplay" >>>
   proc dataDisplay -> do
     title      <- pack ^<< getAttrValue "title"      -< dataDisplay
     dataRegion <- pack ^<< getAttrValue "dataRegion" -< dataDisplay
     returnA -< DataDisplay title dataRegion
 
+parseRun :: ArrowXml cat => cat XmlTree Run
 parseRun = atTag "Run" >>>
   proc run -> do
     component <- pack ^<< getAttrValue "component" -< run
@@ -396,6 +449,7 @@ parseRun = atTag "Run" >>>
     total     <- pack ^<< getAttrValue "total"     -< run
     returnA -< Run component variable increment total
 
+parseSimulation :: ArrowXml cat => cat XmlTree (Maybe Simulation)
 parseSimulation = atTag "Simulation" >>>
   proc simulation -> do
     recorders    <- childListA parseRecord    -< simulation
@@ -404,6 +458,7 @@ parseSimulation = atTag "Simulation" >>>
     runs         <- childListA parseRun    -< simulation
     returnA -< Just $ Simulation recorders dataWriters dataDisplays runs
     
+parseComponentType :: ArrowXml cat => cat XmlTree ComponentType
 parseComponentType = atTag "ComponentType" >>>
   proc compType -> do
     name              <- pack ^<< getAttrValue "name"                 -< compType
@@ -425,6 +480,7 @@ parseComponentType = atTag "ComponentType" >>>
     simulation        <- withDefault (childA parseSimulation) Nothing -< compType
     returnA -< ComponentType name extends parameters fixedParameters derivedParameters compRefs links exposures requirements childDefs childrenDefs eventPorts texts paths dynamics structure simulation
 
+parseComponentExplicit :: ArrowXml cat => cat XmlTree Component
 parseComponentExplicit = atTag "Component" >>>
   proc comp -> do
     id       <- pack ^<< getAttrValue "id"                   -< comp
@@ -435,6 +491,7 @@ parseComponentExplicit = atTag "Component" >>>
     children <- childListA (parseComponentImplicit lemsTags) -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList) children
 
+parseComponentImplicit :: ArrowXml cat => [String] -> cat (NTree XNode) Component
 parseComponentImplicit skipTags = notAtTags skipTags >>>
   proc comp -> do
     id       <- pack ^<< getAttrValue "id"                   -< comp
@@ -445,8 +502,10 @@ parseComponentImplicit skipTags = notAtTags skipTags >>>
     children <- childListA (parseComponentImplicit lemsTags) -< comp
     returnA -< Component id name ctype extends (getAttrMap ["id", "name", "extends", "type"] attrList) children
 
+parseComponent :: ArrowXml a => a XmlTree Component
 parseComponent = parseComponentExplicit `orElse` (parseComponentImplicit lemsTopLevelTags)
 
+parseTarget :: ArrowXml cat => cat XmlTree (Maybe Target)
 parseTarget = atTag "Target" >>>
   proc tgt -> do
     component  <- pack ^<< getAttrValue "component"  -< tgt
@@ -454,6 +513,7 @@ parseTarget = atTag "Target" >>>
     timesFile  <- pack ^<< getAttrValue "timesFile"  -< tgt
     returnA -< Just $ Target component reportFile timesFile
 
+parseLems :: ArrowXml cat => cat (NTree XNode) Lems
 parseLems = atDeepTag "Lems" >>>
   proc lems -> do
     includes   <- childListA parseInclude       -< lems
@@ -466,12 +526,15 @@ parseLems = atDeepTag "Lems" >>>
     tgt        <- withDefault (childA parseTarget) Nothing -< lems
     returnA -< Lems includes dimensions units assertions constants compTypes components tgt
 
+parseXML :: String -> IOStateArrow s b XmlTree
 parseXML xmlText = readString [ withValidate no
                               , withRemoveWS yes  -- throw away formating WS
                               ] xmlText
 
+emptyModel :: Lems
 emptyModel = Lems [] [] [] [] [] [] [] Nothing
 
+concatModels :: [Lems] -> Lems
 concatModels []     = emptyModel
 concatModels (m:ms) = let msc  = concatModels ms
                           d1   = lemsDimensions m
