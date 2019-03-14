@@ -573,15 +573,8 @@ parseLemsXMLFile :: [String]        -- ^ List of directories to search for inclu
                  -> String          -- ^ Path to the file to be parsed
                  -> IO (Maybe Lems)
 parseLemsXMLFile includeDirs xmlFile = do
-  contents <- show <$> readFile xmlFile
+  contents <- unpack <$> readFile xmlFile
   maybeModel <- parseLemsXML contents
-  {-
-  Monad.when (isNothing maybeModel) $ error ("Unable to parse XML file " ++ xmlFile)
-  let model = fromJust maybeModel
-      includedFiles = map (unpack . includeFile) $ lemsIncludes $ model
-  includedModels <- mapM (findAndParseLemsXMLIncludeFile includeDirs) includedFiles
-  return $ Just $ concatModels $ model:(catMaybes includedModels)
-  -}
   case maybeModel of
     Just model -> do
       let includedFiles = map (unpack . includeFile) $ lemsIncludes $ model
@@ -622,10 +615,12 @@ testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFi
 
 test1 = testLems "example4.xml"
 
+{-
 test2 = do
     contents <- readFile "/home/gautham/work/NeuroML/LEMS/examples/example1.xml"
     strout $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
     strout $ show $ head (xread "<comp a=\"1\" b = \"2\"/>") 
+-}
 
 ex4 = "/home/gautham/work/NeuroML/LEMS/examples/example4.xml" :: String
 
