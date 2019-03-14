@@ -2,6 +2,8 @@ module Main where
 
 import Protolude
 
+import Control.Monad
+
 import Data.Semigroup ((<>))
 import Options.Applicative
 
@@ -46,7 +48,7 @@ main :: IO ()
 main = do
   opts <- execParser commandLineParser
   eiParseTree <- parseLemsXMLFile (includeDirectories opts) (xmlFile opts)
-  let eiModel = processParseTree <$> eiParseTree
+  let eiModel = eiParseTree >>= processParseTree
   putStrLn $ (show eiModel :: Text)
   --putStrLn $ (show opts :: Text)
 

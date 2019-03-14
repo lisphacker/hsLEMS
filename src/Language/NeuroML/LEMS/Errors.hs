@@ -14,11 +14,8 @@ module Language.NeuroML.LEMS.Errors where
 import Protolude
 import Data.Text (Text)
 
--- | Errors caught during parsing
-data ParseError = IncludeFileMissing Text -- ^ Include file missing
-                | InvalidLEMSXML Text     -- ^ Error parsing XML
-                deriving (Show)
-
--- | Errors caught during model creation
-data ModelError = UnknownDimension Text  -- ^ Unknown dimension referenced from a unit.
-  deriving (Show)
+-- | Error codes
+data CompilerError = IncludeFileMissing Text -- ^ Include file missing
+                   | InvalidLEMSXML Text     -- ^ Error parsing XML
+                   | UnknownDimension Text   -- ^ Unknown dimension referenced from a unit.
+                   deriving (Show)

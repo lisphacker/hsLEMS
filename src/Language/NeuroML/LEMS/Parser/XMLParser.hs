@@ -556,14 +556,14 @@ concatModels (m:ms) = let msc  = concatModels ms
 
 -- | Parses a string containing an LEMS formatted XML into a parse tree. Does not process include directives.
 parseLemsXML :: String           -- ^ XML text
-             -> IO (Either ParseError Lems)
+             -> IO (Either CompilerError Lems)
 parseLemsXML xmlText = do
   parseTrees <- runX (parseXML xmlText >>> parseLems)
   return $ case parseTrees of
              [] -> Left $ InvalidLEMSXML $ pack xmlText
              (pt:_) -> Right pt
 
-findAndParseLemsXMLIncludeFile :: [String] -> String -> IO (Either ParseError Lems)
+findAndParseLemsXMLIncludeFile :: [String] -> String -> IO (Either CompilerError Lems)
 findAndParseLemsXMLIncludeFile includeDirs xmlFile = do
   maybePath <- findFile includeDirs xmlFile
   case maybePath of
@@ -573,7 +573,7 @@ findAndParseLemsXMLIncludeFile includeDirs xmlFile = do
 -- | Takes a list of directories to search for included files and XML file name, parses the file and any included files, and returns a parse tree.
 parseLemsXMLFile :: [String]        -- ^ List of directories to search for included files
                  -> String          -- ^ Path to the file to be parsed
-                 -> IO (Either ParseError Lems)
+                 -> IO (Either CompilerError Lems)
 parseLemsXMLFile includeDirs xmlFile = do
   contents <- unpack <$> readFile xmlFile
   eiModel <- parseLemsXML contents
@@ -584,7 +584,7 @@ parseLemsXMLFile includeDirs xmlFile = do
              Right model -> case includedModels of
                               Left e       -> Left e
                               Right models -> Right $ concatModels (model:models)
-    where parseFiles :: Either ParseError [String] -> IO (Either ParseError [Lems])
+    where parseFiles :: Either CompilerError [String] -> IO (Either CompilerError [Lems])
           parseFiles (Left e) = return $ Left e
           parseFiles (Right []) = return $ Right []
           parseFiles (Right (f:fs)) = do

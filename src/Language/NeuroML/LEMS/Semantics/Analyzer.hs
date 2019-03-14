@@ -44,7 +44,7 @@ processPTDimensions = processDims . P.lemsDimensions
                         j    = P.dimLumInt d
                     in Dimension name m l t i k n j
 
-processPTUnits :: DimensionMap -> P.Lems -> Either ModelError UnitMap
+processPTUnits :: DimensionMap -> P.Lems -> Either CompilerError UnitMap
 processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
   where processUnits = foldM insertIntoMap M.empty
         insertIntoMap m u = let maybeu' = resolveUnit u
@@ -61,7 +61,7 @@ processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
                              Just dim -> Right $ Unit name symbol dim pow10 scale offset
                              Nothing  -> Left $ UnknownDimension dimName
 
-processParseTree :: P.Lems -> Either ModelError Lems
+processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree parseTree = let dimMap = processPTDimensions parseTree
                              in do unitMap <- processPTUnits dimMap parseTree
                                    Right $ Lems dimMap unitMap
