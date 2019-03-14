@@ -14,6 +14,8 @@ module Language.NeuroML.LEMS.Semantics.Analyzer where
 import Protolude
 import Protolude.Error
 
+import Language.NeuroML.LEMS.Errors
+
 import Data.String
 
 import Data.Maybe
@@ -42,24 +44,27 @@ processPTDimensions = processDims . P.lemsDimensions
                         j    = P.dimLumInt d
                     in Dimension name m l t i k n j
 
-processPTUnits :: Map Text Dimension -> P.Lems -> UnitMap
+processPTUnits :: DimensionMap -> P.Lems -> Either ModelError UnitMap
 processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
-  where processUnits = foldl (\m u -> M.insert (P.unitSymbol u) (convert u) m) M.empty
-        convert u = let name   = P.unitName u
-                        symbol = P.unitSymbol u
-                        dim    = case M.lookup (P.unitDimension u) dimMap of
-                                   Just d  -> d
-                                   Nothing -> error $ "Unknown dimension "
-                        pow10  = P.unitPower10 u
-                        scale  = P.unitScale u
-                        offset = P.unitOffset u
-                    in Unit name symbol dim pow10 scale offset
+  where processUnits = foldM insertIntoMap M.empty
+        insertIntoMap m u = let maybeu' = resolveUnit u
+                            in case maybeu' of
+                                 Left e   -> Left e
+                                 Right u' -> Right $ M.insert (P.unitSymbol u) u' m
+        resolveUnit u = let name   = P.unitName u
+                            symbol = P.unitSymbol u
+                            dimName = P.unitDimension u
+                            pow10  = P.unitPower10 u
+                            scale  = P.unitScale u
+                            offset = P.unitOffset u
+                        in case M.lookup dimName dimMap of
+                             Just dim -> Right $ Unit name symbol dim pow10 scale offset
+                             Nothing  -> Left $ UnknownDimension dimName
 
-
-
-
-
-
+processParseTree :: P.Lems -> Either ModelError Lems
+processParseTree parseTree = let dimMap = processPTDimensions parseTree
+                             in do unitMap <- processPTUnits dimMap parseTree
+                                   Right $ Lems dimMap unitMap
 ------------------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------------------

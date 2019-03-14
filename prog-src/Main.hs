@@ -8,6 +8,7 @@ import Options.Applicative
 import Data.String
 
 import Language.NeuroML.LEMS.Parser (parseLemsXMLFile)
+import Language.NeuroML.LEMS.Semantics.Analyzer (processParseTree)
 
 data CommandLineOptions = CommandLineOptions
   { includeDirectories :: ![String]
@@ -44,8 +45,9 @@ commandLineParser = info
 main :: IO ()
 main = do
   opts <- execParser commandLineParser
-  lemsModel <- parseLemsXMLFile (includeDirectories opts) (xmlFile opts)
-  putStrLn $ (show lemsModel :: Text)
+  eiParseTree <- parseLemsXMLFile (includeDirectories opts) (xmlFile opts)
+  let eiModel = processParseTree <$> eiParseTree
+  putStrLn $ (show eiModel :: Text)
   --putStrLn $ (show opts :: Text)
 
 
