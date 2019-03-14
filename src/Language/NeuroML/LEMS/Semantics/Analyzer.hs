@@ -29,8 +29,7 @@ import qualified Language.NeuroML.LEMS.Parser as P
 import Language.NeuroML.LEMS.Semantics.Model
 
 
-
-
+processPTDimensions :: P.Lems -> DimensionMap
 processPTDimensions = processDims . P.lemsDimensions
   where processDims = foldl (\m d -> M.insert (P.dimName d) (convert d) m) M.empty
         convert d = let name = P.dimName d
@@ -43,6 +42,7 @@ processPTDimensions = processDims . P.lemsDimensions
                         j    = P.dimLumInt d
                     in Dimension name m l t i k n j
 
+processPTUnits :: Map Text Dimension -> P.Lems -> UnitMap
 processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
   where processUnits = foldl (\m u -> M.insert (P.unitSymbol u) (convert u) m) M.empty
         convert u = let name   = P.unitName u
@@ -63,12 +63,14 @@ processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
 ------------------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------------------
-
+{-
 strout :: String -> IO ()
 strout = putStrLn
 
+includeDirs :: [String]
 includeDirs = ["/home/gautham/work/NeuroML/LEMS/examples"]
 
+test :: String -> IO ()
 test file = do
   maybeParseTree <- P.parseLemsXMLFile includeDirs file
   Monad.when (isNothing maybeParseTree) $ error "Unable to parse XML"
@@ -79,4 +81,6 @@ test file = do
   strout $ show $ M.lookup (pack "mV") unitMap
   
 
+testLems :: [Char] -> IO ()
 testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFile
+-}

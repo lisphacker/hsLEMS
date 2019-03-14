@@ -20,11 +20,10 @@ import Protolude hiding (orElse)
 
 import Text.XML.HXT.Core hiding (xread)
 import Language.NeuroML.LEMS.Parser.ParseTree
-
+import Language.NeuroML.LEMS.Errors
 import qualified Data.Map.Strict as M
 
 import Data.Tree.NTree.TypeDefs
-
 
 import Data.Maybe
 import Data.String
@@ -554,33 +553,49 @@ concatModels (m:ms) = let msc  = concatModels ms
                           tnew = if isNothing t1 then t2 else t1
                       in Lems [] (d1 ++ d2) (u1 ++ u2) (a1 ++ a2) (cns1 ++ cns2) (ct1 ++ ct2) (cmp1 ++ cmp2) tnew
 
+
 -- | Parses a string containing an LEMS formatted XML into a parse tree. Does not process include directives.
 parseLemsXML :: String           -- ^ XML text
-             -> IO (Maybe Lems)
+             -> IO (Either ParseError Lems)
 parseLemsXML xmlText = do
   parseTrees <- runX (parseXML xmlText >>> parseLems)
-  let parseTree = listToMaybe parseTrees
-  return parseTree
+  return $ case parseTrees of
+             [] -> Left $ InvalidLEMSXML $ pack xmlText
+             (pt:_) -> Right pt
 
-findAndParseLemsXMLIncludeFile :: [String] -> String -> IO (Maybe Lems)
+findAndParseLemsXMLIncludeFile :: [String] -> String -> IO (Either ParseError Lems)
 findAndParseLemsXMLIncludeFile includeDirs xmlFile = do
-  path <- findFile includeDirs xmlFile
-  model <- parseLemsXMLFile includeDirs $ fromJust path
-  return model
+  maybePath <- findFile includeDirs xmlFile
+  case maybePath of
+    Nothing   -> return $ Left $ IncludeFileMissing $ pack xmlFile
+    Just path -> parseLemsXMLFile includeDirs path
 
 -- | Takes a list of directories to search for included files and XML file name, parses the file and any included files, and returns a parse tree.
 parseLemsXMLFile :: [String]        -- ^ List of directories to search for included files
                  -> String          -- ^ Path to the file to be parsed
-                 -> IO (Maybe Lems)
+                 -> IO (Either ParseError Lems)
 parseLemsXMLFile includeDirs xmlFile = do
   contents <- unpack <$> readFile xmlFile
-  maybeModel <- parseLemsXML contents
-  case maybeModel of
-    Just model -> do
-      let includedFiles = map (unpack . includeFile) $ lemsIncludes $ model
-      includedModels <- mapM (findAndParseLemsXMLIncludeFile includeDirs) includedFiles
-      return $ Just $ concatModels $ model:(catMaybes includedModels)
-    Nothing -> return Nothing
+  eiModel <- parseLemsXML contents
+  let includedFiles = map (unpack . includeFile) <$> lemsIncludes <$> eiModel
+  includedModels <- parseFiles includedFiles
+  return $ case eiModel of
+             Left e      -> Left e
+             Right model -> case includedModels of
+                              Left e       -> Left e
+                              Right models -> Right $ concatModels (model:models)
+    where parseFiles :: Either ParseError [String] -> IO (Either ParseError [Lems])
+          parseFiles (Left e) = return $ Left e
+          parseFiles (Right []) = return $ Right []
+          parseFiles (Right (f:fs)) = do
+            maybem <- findAndParseLemsXMLIncludeFile includeDirs f
+            maybems <- parseFiles $ Right fs
+            return $ case (maybem, maybems) of
+              (Right m, Right ms) -> Right (m:ms)
+              (Left e,  _       ) -> Left e
+              (_,       Left e)   -> Left e
+              
+
 
 -----------------------------------------------------------------------------------------------------------
 {-

@@ -45,7 +45,8 @@ main :: IO ()
 main = do
   opts <- execParser commandLineParser
   lemsModel <- parseLemsXMLFile (includeDirectories opts) (xmlFile opts)
-  putStrLn $ (show opts :: Text)
+  putStrLn $ (show lemsModel :: Text)
+  --putStrLn $ (show opts :: Text)
 
 
 

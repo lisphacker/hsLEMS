@@ -15,8 +15,6 @@ import Protolude
 
 import Data.Map.Strict as M
 
-import Data.Text
-
 -- | Definition of a dimension as a combinations of base SI units.
 data Dimension = Dimension { dimName        :: Text -- ^ Name of the dimension
                            , dimMass        :: Int  -- ^ Mass (kilogram, kg)
@@ -37,7 +35,7 @@ data Unit = Unit { unitName      :: Text      -- ^ Name of the unit
                  , unitScale     :: Double    -- ^ Non-power of 10 scale value
                  , unitOffset    :: Double    -- ^ Non-zero offset
                  } deriving (Show)
-type UnitMap = M.Map Text Dimension           -- ^ Map of symbols to units
+type UnitMap = M.Map Text Unit                -- ^ Map of symbols to units
 
 
 

@@ -28,7 +28,8 @@ executable lemsc
 library
   hs-source-dirs:      src
   ghc-options:         -Wall
-  exposed-modules:     Language.NeuroML.LEMS.Parser
+  exposed-modules:     Language.NeuroML.LEMS.Errors
+                     , Language.NeuroML.LEMS.Parser
                      , Language.NeuroML.LEMS.Parser.ParseTree
                      , Language.NeuroML.LEMS.Parser.XMLParser
                      , Language.NeuroML.LEMS.Semantics.Model

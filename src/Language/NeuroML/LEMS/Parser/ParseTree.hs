@@ -54,13 +54,6 @@ module Language.NeuroML.LEMS.Parser.ParseTree
 
 import Protolude
 
-import Data.Map.Strict
-
-import Text.XML.HXT.Core hiding (xread)
-import Data.Tree.NTree.TypeDefs
-
-import Data.Text
-
 -- | Definition of a dimension as a combinations of base SI units.
 data Dimension = Dimension { dimName        :: Text -- ^ Name of the dimension
                            , dimMass        :: Int  -- ^ Mass (kilogram, kg)
