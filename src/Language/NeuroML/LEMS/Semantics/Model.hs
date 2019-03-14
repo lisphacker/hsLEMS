@@ -37,8 +37,6 @@ data Unit = Unit { unitName      :: Text      -- ^ Name of the unit
                  } deriving (Show)
 type UnitMap = M.Map Text Unit                -- ^ Map of symbols to units
 
-
-
 -- | Lems model
 data Lems = Lems { lemsDimensions :: DimensionMap
                  , lemsUnits      :: UnitMap
