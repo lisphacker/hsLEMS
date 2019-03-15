@@ -37,6 +37,24 @@ data Unit = Unit { unitName      :: Text      -- ^ Name of the unit
                  } deriving (Show)
 type UnitMap = M.Map Text Unit                -- ^ Map of symbols to units
 
+-- | Type class of dimensioned quantities
+class DimensionedQuantity a where
+  qtySIValue :: a -> Double
+  qtyDimension :: a -> Dimension
+
+-- | Definition of a constant value
+-- | Definition of a global/local constant.
+data Constant = Constant { cnstName      :: Text      -- ^ Name of the constant
+                         , cnstDimension :: Dimension -- ^ Dimension of the constant
+                         , cnstValue     :: Double    -- ^ Value of the constant
+                         , cnstUnit      :: Unit      -- ^ Unit of the constant
+                         } deriving (Show)
+type ConstantMap = M.Map Text Constant                -- ^ Map of names to constants
+
+instance DimensionedQuantity Constant where
+  qtySIValue   (Constant _ _ v u) = v * (10.0 ** (fromIntegral $ unitPower10 u)) + unitOffset u
+  qtyDimension (Constant _ d _ _) = d
+
 -- | Lems model
 data Lems = Lems { lemsDimensions :: DimensionMap
                  , lemsUnits      :: UnitMap

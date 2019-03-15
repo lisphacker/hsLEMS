@@ -58,8 +58,26 @@ processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
                             scale  = P.unitScale u
                             offset = P.unitOffset u
                         in case M.lookup dimName dimMap of
-                             Just dim -> Right $ Unit name symbol dim pow10 scale offset
                              Nothing  -> Left $ UnknownDimension dimName
+                             Just dim -> Right $ Unit name symbol dim pow10 scale offset
+
+processPTConstants :: UnitMap -> P.Lems -> Either CompilerError ConstantMap
+processPTConstants unitMap parseTree = processConstants (P.lemsConstants parseTree)
+  where processConstants = foldM insertIntoMap M.empty
+        insertIntoMap m c = let maybec' = resolveConstant c
+                            in case maybec' of
+                                 Left e   -> Left e
+                                 Right c' -> Right $ M.insert (P.unitSymbol c) c' m
+        resolveConstant c = let name   = P.cnstName c
+                                dimName = P.cnstDimension c
+                                valueStr = P.cnstValue c
+                        in case M.lookup dimName unitMap of
+                             Nothing  -> Left $ UnknownDimension dimName
+                             Just dim -> case parseValueString unitMap valueStr of
+                                           Nothing            -> Left $ InvalidValue valueStr
+                                           Just (value, unit) -> Right $ Constant name dim value unit
+                               where parseValueString unitMap valueStr = _
+
 
 processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree parseTree = let dimMap = processPTDimensions parseTree

@@ -80,11 +80,10 @@ data Target = Target { tgtComponent   :: Text -- ^ Name of the component used as
                      , tgtTimesFile   :: Text -- ^ Optional file for saving simulation times
                      } deriving (Show)
 
--- | Definition of a global constant.
+-- | Definition of a global/local constant.
 data Constant = Constant { cnstName      :: Text -- ^ Name of the constant
-                         , cnstSymbol    :: Text -- ^ Symbol used for the constant in expressions
-                         , cnstValue     :: Text -- ^ Value of the constant
                          , cnstDimension :: Text -- ^ Dimension of the constant
+                         , cnstValue     :: Text -- ^ Value of the constant
                          } deriving (Show)
 
 -- | Include directive.

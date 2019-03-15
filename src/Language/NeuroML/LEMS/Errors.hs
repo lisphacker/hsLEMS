@@ -18,4 +18,5 @@ import Data.Text (Text)
 data CompilerError = IncludeFileMissing Text -- ^ Include file missing
                    | InvalidLEMSXML Text     -- ^ Error parsing XML
                    | UnknownDimension Text   -- ^ Unknown dimension referenced from a unit.
+                   | InvalidValue Text       -- ^ Invalid value
                    deriving (Show)
