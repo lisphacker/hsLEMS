@@ -310,6 +310,7 @@ data ComponentType = ComponentType { compTypeName              :: Text          
                                    , compTypeExtends           :: Text                 -- ^ Name of the base component type
                                    , compTypeParameters        :: [Parameter]          -- ^ Component type parameters
                                    , compTypeFixedParameters   :: [Fixed]              -- ^ Fixed parameters
+                                   , compTypeConstants         :: [Constant]           -- ^ Constants
                                    , compTypeDerivedParameters :: [DerivedParameter]   -- ^ Derived parameters
                                    , compTypeCompRefs          :: [ComponentReference] -- ^ Component references
                                    , compTypeLinks             :: [Link]               -- ^ Link definitions

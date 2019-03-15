@@ -464,6 +464,7 @@ parseComponentType = atTag "ComponentType" >>>
     extends           <- pack ^<< getAttrValue "extends"              -< compType
     parameters        <- childListA parseParameter                    -< compType
     fixedParameters   <- childListA parseFixed                        -< compType
+    constants         <- childListA parseConstant                     -< compType
     derivedParameters <- childListA parseDerivedParameter             -< compType
     compRefs          <- childListA parseComponentReference           -< compType
     links             <- childListA parseLink                         -< compType
@@ -477,7 +478,7 @@ parseComponentType = atTag "ComponentType" >>>
     dynamics          <- withDefault (childA parseDynamics) Nothing   -< compType
     structure         <- withDefault (childA parseStructure) Nothing  -< compType
     simulation        <- withDefault (childA parseSimulation) Nothing -< compType
-    returnA -< ComponentType name extends parameters fixedParameters derivedParameters compRefs links exposures requirements childDefs childrenDefs eventPorts texts paths dynamics structure simulation
+    returnA -< ComponentType name extends parameters fixedParameters constants derivedParameters compRefs links exposures requirements childDefs childrenDefs eventPorts texts paths dynamics structure simulation
 
 parseComponentExplicit :: ArrowXml cat => cat XmlTree Component
 parseComponentExplicit = atTag "Component" >>>
