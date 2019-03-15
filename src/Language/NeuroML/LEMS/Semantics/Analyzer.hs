@@ -29,6 +29,7 @@ import qualified Data.Map.Strict as M (empty, insert, lookup)
 import qualified Language.NeuroML.LEMS.Parser as P
 
 import Language.NeuroML.LEMS.Semantics.Model
+import Language.NeuroML.LEMS.Semantics.Parser
 
 
 processPTDimensions :: P.Lems -> DimensionMap
@@ -61,28 +62,29 @@ processPTUnits dimMap parseTree = processUnits (P.lemsUnits parseTree)
                              Nothing  -> Left $ UnknownDimension dimName
                              Just dim -> Right $ Unit name symbol dim pow10 scale offset
 
-processPTConstants :: UnitMap -> P.Lems -> Either CompilerError ConstantMap
-processPTConstants unitMap parseTree = processConstants (P.lemsConstants parseTree)
+processPTConstants :: DimensionMap -> UnitMap -> P.Lems -> Either CompilerError ConstantMap
+processPTConstants dimMap unitMap parseTree = processConstants (P.lemsConstants parseTree)
   where processConstants = foldM insertIntoMap M.empty
         insertIntoMap m c = let maybec' = resolveConstant c
                             in case maybec' of
                                  Left e   -> Left e
-                                 Right c' -> Right $ M.insert (P.unitSymbol c) c' m
+                                 Right c' -> Right $ M.insert (P.cnstName c) c' m
         resolveConstant c = let name   = P.cnstName c
                                 dimName = P.cnstDimension c
                                 valueStr = P.cnstValue c
-                        in case M.lookup dimName unitMap of
+                        in case M.lookup dimName dimMap of
                              Nothing  -> Left $ UnknownDimension dimName
-                             Just dim -> case parseValueString unitMap valueStr of
+                             Just dim -> case parseValue unitMap valueStr of
                                            Nothing            -> Left $ InvalidValue valueStr
                                            Just (value, unit) -> Right $ Constant name dim value unit
-                               where parseValueString unitMap valueStr = _
 
 
 processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree parseTree = let dimMap = processPTDimensions parseTree
                              in do unitMap <- processPTUnits dimMap parseTree
-                                   Right $ Lems dimMap unitMap
+                                   cnstMap <- processPTConstants dimMap unitMap parseTree
+                                   Right $ Lems dimMap unitMap cnstMap
+                                   
 ------------------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------------------
