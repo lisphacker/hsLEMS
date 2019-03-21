@@ -21,6 +21,7 @@ import Data.String
 import Data.Maybe
 import Data.Functor
 import Control.Monad as Monad
+import Control.Monad.Extra as Monad
 
 import Data.Text (pack, unpack)
 
@@ -79,11 +80,22 @@ processPTConstants dimMap unitMap parseTree = processConstants (P.lemsConstants 
                                            Just (value, unit) -> Right $ Constant name dim value unit
 
 
+type ModelState = State (Either CompilerError Lems)
+
+processPTComponentType :: P.Lems -> P.ComponentType -> ModelState ()
+processPTComponentType parseTree compType = 
+  eitherM
+    (\error -> return error)
+    (\model -> return model)
+
+processPTComponentTypes :: P.Lems -> ModelState ()
+processPTComponentTypes parseTree = forM_ (P.lemsComponentTypes parseTree) $ \ct -> processPTComponentType parseTree ct
+  
 processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree parseTree = let dimMap = processPTDimensions parseTree
                              in do unitMap <- processPTUnits dimMap parseTree
                                    cnstMap <- processPTConstants dimMap unitMap parseTree
-                                   Right $ Lems dimMap unitMap cnstMap
+                                   Right $ Lems dimMap unitMap cnstMap M.empty
                                    
 ------------------------------------------------------------------------------------------------------
 

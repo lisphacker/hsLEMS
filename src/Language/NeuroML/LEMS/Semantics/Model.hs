@@ -44,7 +44,6 @@ class DimensionedQuantity a where
   qtySIValue   :: a -> NumericValue
   qtyDimension :: a -> Dimension
 
--- | Definition of a constant value
 -- | Definition of a global/local constant.
 data Constant = Constant { cnstName      :: Text         -- ^ Name of the constant
                          , cnstDimension :: Dimension    -- ^ Dimension of the constant
@@ -57,8 +56,16 @@ instance DimensionedQuantity Constant where
   qtySIValue   (Constant _ _ v u) = v * (10.0 ** (fromIntegral $ unitPower10 u)) + unitOffset u
   qtyDimension (Constant _ d _ _) = d
 
+
+-- | Definition of a component type.
+data ComponentType = ComponentType { compTypeName    :: Text          -- ^ Name of the component type
+                                   , compTypeExtends :: ComponentType -- ^ Base component type
+                                   } deriving (Show)
+type ComponentTypeMap = M.Map Text ComponentType
+
 -- | Lems model
-data Lems = Lems { lemsDimensions :: DimensionMap
-                 , lemsUnits      :: UnitMap
-                 , lemsConstants  :: ConstantMap
+data Lems = Lems { lemsDimensions     :: DimensionMap
+                 , lemsUnits          :: UnitMap
+                 , lemsConstants      :: ConstantMap
+                 , lemsComponentTypes :: ComponentTypeMap
                  } deriving (Show)

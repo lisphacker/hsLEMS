@@ -2,15 +2,14 @@ module Main where
 
 import Protolude
 
-import Control.Monad
-
 import Data.Semigroup ((<>))
 import Options.Applicative
 
 import Data.String
 
-import Language.NeuroML.LEMS.Parser (parseLemsXMLFile)
+import qualified Language.NeuroML.LEMS.Parser as P
 import Language.NeuroML.LEMS.Semantics.Analyzer (processParseTree)
+
 
 data CommandLineOptions = CommandLineOptions
   { includeDirectories :: ![String]
@@ -47,10 +46,10 @@ commandLineParser = info
 main :: IO ()
 main = do
   opts <- execParser commandLineParser
-  eiParseTree <- parseLemsXMLFile (includeDirectories opts) (xmlFile opts)
+  eiParseTree <- P.parseLemsXMLFile (includeDirectories opts) (xmlFile opts)
   let eiModel = eiParseTree >>= processParseTree
+  --putStrLn $ ((show $ P.lemsCompTypes <$> eiParseTree) :: Text)
   putStrLn $ (show eiModel :: Text)
-  --putStrLn $ (show opts :: Text)
 
 
 

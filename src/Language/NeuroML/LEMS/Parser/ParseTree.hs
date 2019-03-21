@@ -334,12 +334,12 @@ data Component = Component { compId         :: Text          -- ^ Component id
                            , compChildren   :: [Component]   -- ^ Child components
                            } deriving (Show)
 -- | Main container.
-data Lems = Lems { lemsIncludes   :: [Include]
-                 , lemsDimensions :: [Dimension]
-                 , lemsUnits      :: [Unit]
-                 , lemsAssertions :: [Assertion]
-                 , lemsConstants  :: [Constant]
-                 , lemsCompTypes  :: [ComponentType]
-                 , lemsComponents :: [Component]
-                 , lemsTarget     :: Maybe Target
+data Lems = Lems { lemsIncludes        :: [Include]
+                 , lemsDimensions      :: [Dimension]
+                 , lemsUnits           :: [Unit]
+                 , lemsAssertions      :: [Assertion]
+                 , lemsConstants       :: [Constant]
+                 , lemsComponentTypes  :: [ComponentType]
+                 , lemsComponents      :: [Component]
+                 , lemsTarget          :: Maybe Target
                  } deriving (Show)

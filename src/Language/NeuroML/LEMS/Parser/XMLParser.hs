@@ -540,14 +540,14 @@ concatModels (m:ms) = let msc  = concatModels ms
                           u1   = lemsUnits m
                           a1   = lemsAssertions m
                           cns1 = lemsConstants m
-                          ct1  = lemsCompTypes m
+                          ct1  = lemsComponentTypes m
                           cmp1 = lemsComponents m
                           t1   = lemsTarget m
                           d2   = lemsDimensions msc
                           u2   = lemsUnits msc
                           a2   = lemsAssertions msc
                           cns2 = lemsConstants msc
-                          ct2  = lemsCompTypes msc
+                          ct2  = lemsComponentTypes msc
                           cmp2 = lemsComponents msc
                           t2   = lemsTarget msc
                           tnew = if isNothing t1 then t2 else t1
