@@ -3,7 +3,7 @@ Module      : Language.NeuroML.LEMS.Semantics.Model
 Description : Model created after resolving LEMS semantics on the AST
 Copyright   : (c) Gautham Ganapathy, 2017
 License     : BSD
-Maintainer  : gautham@lisphacker.org
+Maintainer  : gauthamg@gmail.com
 Stability   : experimental
 Portability : POSIX
 

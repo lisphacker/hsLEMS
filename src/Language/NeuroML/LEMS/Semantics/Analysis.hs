@@ -3,7 +3,7 @@ Module      : Language.NeuroML.LEMS.Semantics.Analyzer
 Description : Analyzes parse tree to generate model.
 Copyright   : (c) Gautham Ganapathy, 2017
 License     : BSD
-Maintainer  : gautham@lisphacker.org
+Maintainer  : gauthamg@gmail.com
 Stability   : experimental
 Portability : POSIX
 
@@ -82,6 +82,7 @@ processPTConstants dimMap unitMap parseTree = processConstants (P.lemsConstants 
 
 type ModelState = State (Either CompilerError Lems)
 
+{-
 processPTComponentType :: P.Lems -> P.ComponentType -> ModelState ()
 processPTComponentType parseTree compType = 
   eitherM
@@ -90,13 +91,14 @@ processPTComponentType parseTree compType =
 
 processPTComponentTypes :: P.Lems -> ModelState ()
 processPTComponentTypes parseTree = forM_ (P.lemsComponentTypes parseTree) $ \ct -> processPTComponentType parseTree ct
-  
+-}
+
 processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree parseTree = let dimMap = processPTDimensions parseTree
                              in do unitMap <- processPTUnits dimMap parseTree
                                    cnstMap <- processPTConstants dimMap unitMap parseTree
                                    Right $ Lems dimMap unitMap cnstMap M.empty
-                                   
+
 ------------------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------------------
