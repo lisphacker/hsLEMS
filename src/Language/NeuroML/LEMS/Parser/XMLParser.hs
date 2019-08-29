@@ -5,7 +5,7 @@ Module      : Language.NeuroML.LEMS.Parser.XMLParser
 Description : Parsed LEMS model
 Copyright   : (c) Gautham Ganapathy, 2017
 License     : BSD
-Maintainer  : gautham@lisphacker.org
+Maintainer  : gauthamg@gmail.com
 Stability   : experimental
 Portability : POSIX
 
