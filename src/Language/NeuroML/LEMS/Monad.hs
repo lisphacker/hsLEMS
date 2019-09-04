@@ -10,8 +10,16 @@ Portability : POSIX
 LEMS model after being parsed from XML.
 -}
 module Language.NeuroML.LEMS.Monad where
-    
-import Control.Monad.Except (ExceptT)
-import Control.Monad.State (StateT)
 
-type CompilerMonad e s m = ExceptT e (StateT s m)
+import Protolude
+
+import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.State (StateT, evalStateT)
+import Control.Monad.Identity (Identity, runIdentity)
+
+type CompilerMonad e s = ExceptT e (StateT s Identity) Void
+
+runCompilerMonad :: s -> CompilerMonad e s -> Either e s
+runCompilerMonad s = runIdentity . flip evalStateT s . runExceptT
+                     
+                         

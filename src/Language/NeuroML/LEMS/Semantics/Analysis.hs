@@ -15,6 +15,7 @@ import Protolude
 
 import Control.Monad.State (get, put, runStateT)
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Identity (Identity)
 
 import qualified Data.Map.Strict as M (empty, insert, lookup)
 
@@ -25,20 +26,15 @@ import qualified Language.NeuroML.LEMS.Parser as P
 import Language.NeuroML.LEMS.Semantics.Model
 import Language.NeuroML.LEMS.Semantics.Parser
 
-import Language.NeuroML.LEMS.Monad (CompilerMonad)
+import Language.NeuroML.LEMS.Monad (CompilerMonad, runCompilerMonad)
 
-type AnalysisMonad = CompilerMonad CompilerError Lems IO
+type AnalysisMonad = CompilerMonad CompilerError Lems
 
-processPTDimensions :: P.Lems -> AnalysisMonad ()
-processPTDimensions = undefined
-  
+processPTDimensions :: P.Lems -> AnalysisMonad Lems
+processPTDimensions pt = _
 
-
-runStateExceptT :: Monad m => s -> ExceptT e (StateT s m) a -> m (Either e a, s)
-runStateExceptT s = flip runStateT s . runExceptT
-
-processParseTree :: P.Lems -> IO (Either CompilerError (), Lems)
-processParseTree lemsPT = runStateExceptT newModel $ processPTDimensions lemsPT
+processParseTree :: P.Lems -> Either CompilerError Lems
+processParseTree lemsPT = runCompilerMonad newModel $ processPTDimensions lemsPT
 
 
 
