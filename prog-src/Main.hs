@@ -8,7 +8,7 @@ import Options.Applicative
 import Data.String
 
 import qualified Language.NeuroML.LEMS.Parser as P
-import Language.NeuroML.LEMS.Semantics.Analyzer (processParseTree)
+import Language.NeuroML.LEMS.Semantics.Analysis (processParseTree)
 
 
 data CommandLineOptions = CommandLineOptions

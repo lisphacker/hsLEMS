@@ -1,5 +1,5 @@
 {-|
-Module      : Language.NeuroML.LEMS.Semantics.Analyzer
+Module      : Language.NeuroML.LEMS.Semantics.Analysis
 Description : Analyzes parse tree to generate model.
 Copyright   : (c) Gautham Ganapathy, 2017
 License     : BSD
@@ -9,29 +9,51 @@ Portability : POSIX
 
 LEMS model after being parsed from XML.
 -}
-module Language.NeuroML.LEMS.Semantics.Analyzer where
+module Language.NeuroML.LEMS.Semantics.Analysis where
 
 import Protolude
-import Protolude.Error
 
-import Language.NeuroML.LEMS.Errors
-
-import Data.String
-
-import Data.Maybe
-import Data.Functor
-import Control.Monad as Monad
-import Control.Monad.Extra as Monad
-
-import Data.Text (pack, unpack)
+import Control.Monad.State (get, put, runStateT)
+import Control.Monad.Except (runExceptT)
 
 import qualified Data.Map.Strict as M (empty, insert, lookup)
+
+import Language.NeuroML.LEMS.Errors
 
 import qualified Language.NeuroML.LEMS.Parser as P
 
 import Language.NeuroML.LEMS.Semantics.Model
 import Language.NeuroML.LEMS.Semantics.Parser
 
+import Language.NeuroML.LEMS.Monad (CompilerMonad)
+
+type AnalysisMonad = CompilerMonad CompilerError Lems IO
+
+processPTDimensions :: P.Lems -> AnalysisMonad ()
+processPTDimensions = undefined
+  
+
+
+runStateExceptT :: Monad m => s -> ExceptT e (StateT s m) a -> m (Either e a, s)
+runStateExceptT s = flip runStateT s . runExceptT
+
+processParseTree :: P.Lems -> IO (Either CompilerError (), Lems)
+processParseTree lemsPT = runStateExceptT newModel $ processPTDimensions lemsPT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{-
 
 processPTDimensions :: P.Lems -> DimensionMap
 processPTDimensions = processDims . P.lemsDimensions
@@ -99,27 +121,4 @@ processParseTree parseTree = let dimMap = processPTDimensions parseTree
                                    cnstMap <- processPTConstants dimMap unitMap parseTree
                                    Right $ Lems dimMap unitMap cnstMap M.empty
 
-------------------------------------------------------------------------------------------------------
-
------------------------------------------------------------------------------------------------------------
-{-
-strout :: String -> IO ()
-strout = putStrLn
-
-includeDirs :: [String]
-includeDirs = ["/home/gautham/work/NeuroML/LEMS/examples"]
-
-test :: String -> IO ()
-test file = do
-  maybeParseTree <- P.parseLemsXMLFile includeDirs file
-  Monad.when (isNothing maybeParseTree) $ error "Unable to parse XML"
-  let parseTree = fromJust maybeParseTree
-      dimMap = processPTDimensions parseTree
-      unitMap = processPTUnits dimMap parseTree
-  strout $ show $ M.lookup (pack "capacitance") dimMap
-  strout $ show $ M.lookup (pack "mV") unitMap
-  
-
-testLems :: [Char] -> IO ()
-testLems lemsFile = test $ "/home/gautham/work/NeuroML/LEMS/examples/" ++ lemsFile
 -}

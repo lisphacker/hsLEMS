@@ -29,12 +29,12 @@ library
   hs-source-dirs:      src
   ghc-options:         -Wall
   exposed-modules:     Language.NeuroML.LEMS.Errors
+                     , Language.NeuroML.LEMS.Monad
                      , Language.NeuroML.LEMS.Parser
                      , Language.NeuroML.LEMS.Parser.ParseTree
                      , Language.NeuroML.LEMS.Parser.XMLParser
-                     , Language.NeuroML.LEMS.Semantics.Model
-                     , Language.NeuroML.LEMS.Semantics.Monad
                      , Language.NeuroML.LEMS.Semantics.Analysis
+                     , Language.NeuroML.LEMS.Semantics.Model
                      , Language.NeuroML.LEMS.Semantics.Parser
   build-depends:       base >= 4.7 && < 5
                      , containers >= 0.5.7.1

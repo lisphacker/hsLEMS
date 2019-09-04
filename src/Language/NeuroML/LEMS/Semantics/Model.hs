@@ -13,7 +13,7 @@ module Language.NeuroML.LEMS.Semantics.Model where
 
 import Protolude
 
-import Data.Map.Strict as M
+import qualified Data.Map.Strict as M
 
 type NumericValue = Double
 
@@ -69,3 +69,6 @@ data Lems = Lems { lemsDimensions     :: DimensionMap
                  , lemsConstants      :: ConstantMap
                  , lemsComponentTypes :: ComponentTypeMap
                  } deriving (Show)
+
+newModel :: Lems
+newModel = Lems M.empty M.empty M.empty M.empty

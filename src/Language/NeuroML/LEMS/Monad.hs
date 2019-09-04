@@ -1,5 +1,5 @@
 {-|
-Module      : Language.NeuroML.LEMS.Semantics.Monad
+Module      : Language.NeuroML.LEMS.Monad
 Description : Compiler monad
 Copyright   : (c) Gautham Ganapathy, 2019
 License     : BSD
@@ -9,7 +9,7 @@ Portability : POSIX
 
 LEMS model after being parsed from XML.
 -}
-module Language.NeuroML.LEMS.Semantics.Monad where
+module Language.NeuroML.LEMS.Monad where
     
 import Control.Monad.Except (ExceptT)
 import Control.Monad.State (StateT)
