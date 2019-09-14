@@ -28,10 +28,12 @@ import Language.NeuroML.LEMS.Semantics.Parser
 
 import Language.NeuroML.LEMS.Monad (CompilerMonad, runCompilerMonad)
 
-type AnalysisMonad = CompilerMonad CompilerError Lems
+type AnalysisMonad a = CompilerMonad CompilerError Lems a
 
 processPTDimensions :: P.Lems -> AnalysisMonad Lems
-processPTDimensions pt = _
+processPTDimensions pt = do
+  s <- get
+  put s
 
 processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree lemsPT = runCompilerMonad newModel $ processPTDimensions lemsPT

@@ -14,12 +14,13 @@ module Language.NeuroML.LEMS.Monad where
 import Protolude
 
 import Control.Monad.Except (ExceptT, runExceptT)
-import Control.Monad.State (StateT, evalStateT)
+import Control.Monad.State (StateT, runStateT)
 import Control.Monad.Identity (Identity, runIdentity)
 
-type CompilerMonad e s = ExceptT e (StateT s Identity) Void
+type CompilerMonad e s a = ExceptT e (StateT s Identity) a
 
-runCompilerMonad :: s -> CompilerMonad e s -> Either e s
-runCompilerMonad s = runIdentity . flip evalStateT s . runExceptT
-                     
-                         
+runCompilerMonad :: s -> CompilerMonad e s a -> Either e s
+runCompilerMonad s m = let (ea, s') = (runIdentity . flip runStateT s . runExceptT) m
+                       in case ea of
+                            Left e  -> Left e
+                            Right _ -> Right s'
