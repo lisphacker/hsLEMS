@@ -31,9 +31,7 @@ import Language.NeuroML.LEMS.Monad (CompilerMonad, runCompilerMonad)
 type AnalysisMonad a = CompilerMonad CompilerError Lems a
 
 processPTDimensions :: P.Lems -> AnalysisMonad Lems
-processPTDimensions pt = do
-  s <- get
-  put s
+processPTDimensions pt = _
 
 processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree lemsPT = runCompilerMonad newModel $ processPTDimensions lemsPT
