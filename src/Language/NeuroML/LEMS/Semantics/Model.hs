@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
 Module      : Language.NeuroML.LEMS.Semantics.Model
 Description : Model created after resolving LEMS semantics on the AST
@@ -13,20 +14,22 @@ module Language.NeuroML.LEMS.Semantics.Model where
 
 import Protolude
 
+import Control.Lens.TH (makeLenses)
 import qualified Data.Map.Strict as M
 
 type NumericValue = Double
 
 -- | Definition of a dimension as a combinations of base SI units.
-data Dimension = Dimension { dimName        :: Text -- ^ Name of the dimension
-                           , dimMass        :: Int  -- ^ Mass (kilogram, kg)
-                           , dimLength      :: Int  -- ^ Length (metre, m)
-                           , dimTime        :: Int  -- ^ Time (second, s)
-                           , dimCurrent     :: Int  -- ^ Electric current (ampere, A)
-                           , dimTemperature :: Int  -- ^ Thermodynamic temperature (kelvin, K)
-                           , dimQuantity    :: Int  -- ^ Quantity (mole, mol)
-                           , dimLumInt      :: Int  -- ^ Luminous intensity (candela, cd)
+data Dimension = Dimension { _dimName        :: Text -- ^ Name of the dimension
+                           , _dimMass        :: Int  -- ^ Mass (kilogram, kg)
+                           , _dimLength      :: Int  -- ^ Length (metre, m)
+                           , _dimTime        :: Int  -- ^ Time (second, s)
+                           , _dimCurrent     :: Int  -- ^ Electric current (ampere, A)
+                           , _dimTemperature :: Int  -- ^ Thermodynamic temperature (kelvin, K)
+                           , _dimQuantity    :: Int  -- ^ Quantity (mole, mol)
+                           , _dimLumInt      :: Int  -- ^ Luminous intensity (candela, cd)
                            } deriving (Show)
+makeLenses ''Dimension
 type DimensionMap = M.Map Text Dimension            -- ^ Map of names to dimensions
 
 -- | Definition of a unit symbol as a scaled dimension.
@@ -64,11 +67,11 @@ data ComponentType = ComponentType { compTypeName    :: Text          -- ^ Name 
 type ComponentTypeMap = M.Map Text ComponentType
 
 -- | Lems model
-data Lems = Lems { lemsDimensions     :: DimensionMap
-                 , lemsUnits          :: UnitMap
-                 , lemsConstants      :: ConstantMap
-                 , lemsComponentTypes :: ComponentTypeMap
+data Lems = Lems { _lemsDimensions     :: DimensionMap
+                 , _lemsUnits          :: UnitMap
+                 , _lemsConstants      :: ConstantMap
+                 , _lemsComponentTypes :: ComponentTypeMap
                  } deriving (Show)
-
+makeLenses ''Lems
 newModel :: Lems
 newModel = Lems M.empty M.empty M.empty M.empty

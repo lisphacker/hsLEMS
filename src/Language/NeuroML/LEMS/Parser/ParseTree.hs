@@ -9,8 +9,10 @@ Portability : POSIX
 
 LEMS model after being parsed from XML.
 -}
+
+{-
 module Language.NeuroML.LEMS.Parser.ParseTree
-  ( Dimension(..)
+  ( Dimension(..), dimName
   , Unit(..)
   , Target(..)
   , Constant(..)
@@ -51,22 +53,21 @@ module Language.NeuroML.LEMS.Parser.ParseTree
   , Component(..)
   , Lems(..)
   ) where
+-}
+module Language.NeuroML.LEMS.Parser.ParseTree where
 
 import Protolude
-import Control.Lens hiding (element)
-import Control.Lens.TH
 
 -- | Definition of a dimension as a combinations of base SI units.
-data Dimension = Dimension { _dimName        :: Text -- ^ Name of the dimension
-                           , _dimMass        :: Int  -- ^ Mass (kilogram, kg)
-                           , _dimLength      :: Int  -- ^ Length (metre, m)
-                           , _dimTime        :: Int  -- ^ Time (second, s)
-                           , _dimCurrent     :: Int  -- ^ Electric current (ampere, A)
-                           , _dimTemperature :: Int  -- ^ Thermodynamic temperature (kelvin, K)
-                           , _dimQuantity    :: Int  -- ^ Quantity (mole, mol)
-                           , _dimLumInt      :: Int  -- ^ Luminous intensity (candela, cd)
+data Dimension = Dimension { dimName        :: Text -- ^ Name of the dimension
+                           , dimMass        :: Int  -- ^ Mass (kilogram, kg)
+                           , dimLength      :: Int  -- ^ Length (metre, m)
+                           , dimTime        :: Int  -- ^ Time (second, s)
+                           , dimCurrent     :: Int  -- ^ Electric current (ampere, A)
+                           , dimTemperature :: Int  -- ^ Thermodynamic temperature (kelvin, K)
+                           , dimQuantity    :: Int  -- ^ Quantity (mole, mol)
+                           , dimLumInt      :: Int  -- ^ Luminous intensity (candela, cd)
                            } deriving (Show)
-makeLenses ''Dimension
 
 
 -- | Definition of a unit symbol as a scaled dimension.

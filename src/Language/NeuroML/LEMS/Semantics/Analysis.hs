@@ -12,29 +12,46 @@ LEMS model after being parsed from XML.
 module Language.NeuroML.LEMS.Semantics.Analysis where
 
 import Protolude
+import Data.Maybe (fromJust)
 
 import Control.Monad.State (get, put, runStateT)
-import Control.Monad.Except (runExceptT)
-import Control.Monad.Identity (Identity)
 
-import qualified Data.Map.Strict as M (empty, insert, lookup)
+import Control.Lens
+
+import qualified Data.Map.Strict as M (empty, insert, lookup, notMember)
 
 import Language.NeuroML.LEMS.Errors
 
 import qualified Language.NeuroML.LEMS.Parser as P
 
 import Language.NeuroML.LEMS.Semantics.Model
-import Language.NeuroML.LEMS.Semantics.Parser
+--import Language.NeuroML.LEMS.Semantics.Parser
 
 import Language.NeuroML.LEMS.Monad (CompilerMonad, runCompilerMonad)
 
 type AnalysisMonad a = CompilerMonad CompilerError Lems a
 
-processPTDimensions :: P.Lems -> AnalysisMonad Lems
-processPTDimensions pt = _
+processPTDimensions :: [P.Dimension] -> AnalysisMonad ()
+processPTDimensions ptDimensions  = forM_ ptDimensions $ \(P.Dimension name m l t c t' q l') -> do
+  lems <- get
+  let lems' = lemsDimensions %~ (M.insert name (Dimension name m l t c t' q l')) $ lems
+  put lems'
+  return lems'
+
+processPTUnits :: [P.Unit] -> AnalysisMonad ()
+processPTUnits ptUnits  = forM_ ptUnits $ \(P.Unit name sym dimName pow10 sc off) -> do
+  lems <- get
+  when (M.notMember dimName $ lems ^. lemsDimensions) $ throwError $ UnknownDimension dimName
+  let dim = fromJust $ M.lookup dimName $ lems ^. lemsDimensions
+  let lems' = lemsUnits %~ (M.insert name (Unit name sym dim pow10 sc off)) $ lems
+  put lems'
+  return lems'
 
 processParseTree :: P.Lems -> Either CompilerError Lems
-processParseTree lemsPT = runCompilerMonad newModel $ processPTDimensions lemsPT
+processParseTree (P.Lems _ dimensions units _ _ _ _ _) =
+  runCompilerMonad newModel $ do
+    processPTDimensions dimensions
+    processPTUnits units
 
 
 
