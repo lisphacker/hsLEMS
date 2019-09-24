@@ -156,9 +156,10 @@ parseConstant :: ArrowXml cat => cat XmlTree Constant
 parseConstant = atTag "Constant" >>>
   proc constant -> do
     name      <- pack ^<< getAttrValue "name"      -< constant
+    symbol    <- pack ^<< getAttrValue "symbol"    -< constant
     dimension <- pack ^<< getAttrValue "dimension" -< constant
     value     <- pack ^<< getAttrValue "value"     -< constant
-    returnA -< Constant name dimension value 
+    returnA -< Constant name symbol dimension value 
 
 parseInclude :: ArrowXml cat => cat XmlTree Include
 parseInclude = atTag "Include" >>>

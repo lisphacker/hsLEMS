@@ -87,6 +87,7 @@ data Target = Target { tgtComponent   :: Text -- ^ Name of the component used as
 
 -- | Definition of a global/local constant.
 data Constant = Constant { cnstName      :: Text -- ^ Name of the constant
+                         , cnstSymbol    :: Text -- ^ Symbol for referring to the constant
                          , cnstDimension :: Text -- ^ Dimension of the constant
                          , cnstValue     :: Text -- ^ Value of the constant
                          } deriving (Show)
