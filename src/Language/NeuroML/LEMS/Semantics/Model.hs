@@ -49,6 +49,7 @@ class DimensionedQuantity a where
 
 -- | Definition of a global/local constant.
 data Constant = Constant { cnstName      :: Text         -- ^ Name of the constant
+                         , cnstSymbol    :: Text         -- ^ Symbol used to refer to the constant
                          , cnstDimension :: Dimension    -- ^ Dimension of the constant
                          , cnstValue     :: NumericValue -- ^ Value of the constant
                          , cnstUnit      :: Unit         -- ^ Unit of the constant
@@ -67,10 +68,10 @@ data ComponentType = ComponentType { compTypeName    :: Text          -- ^ Name 
 type ComponentTypeMap = M.Map Text ComponentType
 
 -- | Lems model
-data Lems = Lems { _lemsDimensions     :: DimensionMap
-                 , _lemsUnits          :: UnitMap
-                 , _lemsConstants      :: ConstantMap
-                 , _lemsComponentTypes :: ComponentTypeMap
+data Lems = Lems { _lemsDimensions     :: DimensionMap        -- ^ Map of dimensions
+                 , _lemsUnits          :: UnitMap             -- ^ Map of units
+                 , _lemsConstants      :: ConstantMap         -- ^ Map of constants
+                 , _lemsComponentTypes :: ComponentTypeMap    -- ^ Map of component types
                  } deriving (Show)
 makeLenses ''Lems
 newModel :: Lems

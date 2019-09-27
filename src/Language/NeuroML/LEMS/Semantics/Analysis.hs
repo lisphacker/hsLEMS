@@ -47,6 +47,12 @@ processPTUnits ptUnits  = forM_ ptUnits $ \(P.Unit name sym dimName pow10 sc off
   put lems'
   return lems'
 
+processPTConstants :: [P.Constant] -> AnalysisMonad ()
+processConstants ptConstants = forM_ ptConstants $ \(P.Constant name sym dimName value) -> do
+  lems <- get
+  when (M.notMember dimName $ lems ^. lemsDimensions) $ throwError $ UnknownDimension dimName
+  let key = if sym == "" then name else sym
+  
 processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree (P.Lems _ dimensions units _ _ _ _ _) =
   runCompilerMonad newModel $ do
