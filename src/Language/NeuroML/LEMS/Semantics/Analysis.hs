@@ -14,11 +14,11 @@ module Language.NeuroML.LEMS.Semantics.Analysis where
 import Protolude
 import Data.Maybe (fromJust)
 
-import Control.Monad.State (get, put, runStateT)
+import Control.Monad.State (get, put)
 
 import Control.Lens
 
-import qualified Data.Map.Strict as M (empty, insert, lookup, notMember)
+import qualified Data.Map.Strict as M (insert, lookup, notMember)
 
 import Language.NeuroML.LEMS.Errors
 
@@ -47,11 +47,13 @@ processPTUnits ptUnits  = forM_ ptUnits $ \(P.Unit name sym dimName pow10 sc off
   put lems'
   return lems'
 
+{-
 processPTConstants :: [P.Constant] -> AnalysisMonad ()
 processConstants ptConstants = forM_ ptConstants $ \(P.Constant name sym dimName value) -> do
   lems <- get
   when (M.notMember dimName $ lems ^. lemsDimensions) $ throwError $ UnknownDimension dimName
   let key = if sym == "" then name else sym
+-}
   
 processParseTree :: P.Lems -> Either CompilerError Lems
 processParseTree (P.Lems _ dimensions units _ _ _ _ _) =

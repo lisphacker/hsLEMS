@@ -11,27 +11,23 @@ Representation of numeric expressions and values and their parsers
 -}
 module Language.NeuroML.LEMS.Semantics.Expression where
 
-import Protolude hiding (dropWhile)
+import Protolude
 
-import Data.Text
-import Data.Text.Read (double)
-import Data.Char
+import Data.Attoparsec.Text
 
-import qualified Data.Map.Strict as M (lookup)
+type NumericType = Double
 
-import Language.NeuroML.LEMS.Semantics.Model
+data Expression v = Value v
+                  | Term Text
+                  | Add (Expression v) (Expression v)
+                  | Sub (Expression v) (Expression v)
+                  | Mul (Expression v) (Expression v)
+                  | Div (Expression v) (Expression v)
 
-newtype NumericValue = Double
+parseNumericValue :: Parser (Expression NumericType)
+parseNumericValue = undefined
 
-data Expression v = Value NumericValue
-                  | 
-
-parseValue :: UnitMap -> Text -> Maybe (NumericValue, Unit)
-parseValue unitMap valueStr = let eiParsed = double valueStr
-                              in case eiParsed of
-                                   Left _ ->           Nothing
-                                   Right (value, rest) -> let symbol = dropWhile isSpace $ dropWhileEnd isSpace rest
-                                                          in case M.lookup symbol unitMap of
-                                                               Just unit -> Just (value, unit)
-                                                               Nothing   -> Nothing
-                                                                  
+parseExpression :: Text -> Expression NumericType
+parseExpression text = case eitherResult $ parse parseNumericValue text of
+  Left  err   -> undefined
+  Right value -> undefined

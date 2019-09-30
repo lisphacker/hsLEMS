@@ -17,6 +17,8 @@ import Protolude
 import Control.Lens.TH (makeLenses)
 import qualified Data.Map.Strict as M
 
+import Language.NeuroML.LEMS.Semantics.Expression
+
 -- | Definition of a dimension as a combinations of base SI units.
 data Dimension = Dimension { _dimName        :: Text -- ^ Name of the dimension
                            , _dimMass        :: Int  -- ^ Mass (kilogram, kg)
@@ -35,21 +37,21 @@ data Unit = Unit { unitName      :: Text         -- ^ Name of the unit
                  , unitSymbol    :: Text         -- ^ Unit symbol
                  , unitDimension :: Dimension    -- ^ Name of the dimension being scaled
                  , unitPower10   :: Int          -- ^ Power of 10 scale value
-                 , unitScale     :: NumericValue -- ^ Non-power of 10 scale value
-                 , unitOffset    :: NumericValue -- ^ Non-zero offset
+                 , unitScale     :: NumericType -- ^ Non-power of 10 scale value
+                 , unitOffset    :: NumericType -- ^ Non-zero offset
                  } deriving (Show)
 type UnitMap = M.Map Text Unit                   -- ^ Map of symbols to units
 
 -- | Type class of dimensioned quantities
 class DimensionedQuantity a where
-  qtySIValue   :: a -> NumericValue
+  qtySIValue   :: a -> NumericType
   qtyDimension :: a -> Dimension
 
 -- | Definition of a global/local constant.
 data Constant = Constant { cnstName      :: Text         -- ^ Name of the constant
                          , cnstSymbol    :: Text         -- ^ Symbol used to refer to the constant
                          , cnstDimension :: Dimension    -- ^ Dimension of the constant
-                         , cnstValue     :: NumericValue -- ^ Value of the constant
+                         , cnstValue     :: NumericType -- ^ Value of the constant
                          , cnstUnit      :: Unit         -- ^ Unit of the constant
                          } deriving (Show)
 type ConstantMap = M.Map Text Constant                   -- ^ Map of names to constants
