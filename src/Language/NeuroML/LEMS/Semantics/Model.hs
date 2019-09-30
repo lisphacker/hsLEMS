@@ -17,8 +17,6 @@ import Protolude
 import Control.Lens.TH (makeLenses)
 import qualified Data.Map.Strict as M
 
-type NumericValue = Double
-
 -- | Definition of a dimension as a combinations of base SI units.
 data Dimension = Dimension { _dimName        :: Text -- ^ Name of the dimension
                            , _dimMass        :: Int  -- ^ Mass (kilogram, kg)
@@ -57,8 +55,8 @@ data Constant = Constant { cnstName      :: Text         -- ^ Name of the consta
 type ConstantMap = M.Map Text Constant                   -- ^ Map of names to constants
 
 instance DimensionedQuantity Constant where
-  qtySIValue   (Constant _ _ v u) = v * (10.0 ** (fromIntegral $ unitPower10 u)) + unitOffset u
-  qtyDimension (Constant _ d _ _) = d
+  qtySIValue   (Constant _ _ _ v u) = v * (10.0 ** (fromIntegral $ unitPower10 u)) + unitOffset u
+  qtyDimension (Constant _ _ d _ _) = d
 
 
 -- | Definition of a component type.

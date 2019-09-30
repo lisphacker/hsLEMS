@@ -1,4 +1,4 @@
-{-|
+{-
 Module      : Language.NeuroML.LEMS.Semantics.Analysis
 Description : Analyzes parse tree to generate model.
 Copyright   : (c) Gautham Ganapathy, 2017

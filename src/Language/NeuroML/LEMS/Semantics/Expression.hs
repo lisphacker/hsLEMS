@@ -1,15 +1,15 @@
 {-|
-Module      : Language.NeuroML.LEMS.Semantics.Parser
-Description : Expression and value parsers
+Module      : Language.NeuroML.LEMS.Semantics.Expression
+Description : Numeric values/expressions and their parsers
 Copyright   : (c) Gautham Ganapathy, 2019
 License     : BSD
 Maintainer  : gauthamg@gmail.com
 Stability   : experimental
 Portability : POSIX
 
-LEMS model after being parsed from XML.
+Representation of numeric expressions and values and their parsers
 -}
-module Language.NeuroML.LEMS.Semantics.Parser where
+module Language.NeuroML.LEMS.Semantics.Expression where
 
 import Protolude hiding (dropWhile)
 
@@ -20,6 +20,11 @@ import Data.Char
 import qualified Data.Map.Strict as M (lookup)
 
 import Language.NeuroML.LEMS.Semantics.Model
+
+newtype NumericValue = Double
+
+data Expression v = Value NumericValue
+                  | 
 
 parseValue :: UnitMap -> Text -> Maybe (NumericValue, Unit)
 parseValue unitMap valueStr = let eiParsed = double valueStr
